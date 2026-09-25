@@ -1,6 +1,6 @@
 {
   "name": "@easy-cms/storage-s3",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "S3-compatible upload storage for Easy CMS: AWS S3, Cloudflare R2, MinIO",
   "license": "MIT",
   "type": "module",

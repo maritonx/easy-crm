@@ -1,6 +1,6 @@
 {
   "name": "@easy-cms/db-sqlite",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "SQLite / libSQL database adapter for Easy CMS",
   "license": "MIT",
   "type": "module",
