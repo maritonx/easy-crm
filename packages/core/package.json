@@ -1,0 +1,46 @@
+{
+  "name": "@easy-cms/core",
+  "version": "0.0.0",
+  "description": "Embedded, code-first headless CMS for Nuxt and Next.js",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "jiti": "^2.7.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "cms",
+    "headless-cms",
+    "nuxt",
+    "nextjs",
+    "vue",
+    "react"
+  ]
+}
