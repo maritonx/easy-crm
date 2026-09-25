@@ -1,0 +1,43 @@
+{
+  "name": "create-easy-cms",
+  "version": "0.0.0",
+  "description": "Add Easy CMS to a Nuxt or Next.js project",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "create-easy-cms": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "directory": "packages/create-easy-cms"
+  },
+  "keywords": [
+    "easy-cms",
+    "create",
+    "nuxt",
+    "nextjs",
+    "cms"
+  ]
+}

@@ -2,6 +2,7 @@ import type { AuthUser } from '../access.js'
 import type { Session } from '../auth/auth.js'
 import { safeEqual } from '../auth/tokens.js'
 import { INTERNAL_COLLECTIONS, MEDIA, USERS } from '../builtins.js'
+import type { Config } from '../config.js'
 import {
   EasyCMSError,
   ForbiddenError,
@@ -42,7 +43,12 @@ interface Context {
 }
 
 /** Creates the REST API as a Web-standard `(Request) => Response` handler. */
-export function createRestHandler(cms: EasyCMS, options: RestHandlerOptions = {}): RestHandler {
+export function createRestHandler<C extends Config>(
+  instance: EasyCMS<C>,
+  options: RestHandlerOptions = {},
+): RestHandler {
+  // The handler works with any collection by slug, so it uses the untyped API.
+  const cms = instance as unknown as EasyCMS
   const basePath = (options.basePath ?? cms.config.routes.api).replace(/\/+$/, '')
   const production = process.env.NODE_ENV === 'production'
 

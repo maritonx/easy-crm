@@ -108,6 +108,65 @@ describe('easy-cms CLI (FR-INS-06..08)', () => {
     delete process.env.CLI_TEST_SECRET
   })
 
+  it('generates types (FR-INS-05)', async () => {
+    const dir = project("[{ name: 'title', type: 'text', required: true }]")
+    const result = await cli('generate:types', '--cwd', dir)
+    expect(result).toMatchObject({ code: 0, out: expect.stringContaining('easy-cms-types.ts') })
+    const types = readFileSync(join(dir, 'easy-cms-types.ts'), 'utf8')
+    expect(types).toContain('export interface Post {')
+    expect(types).toContain('  title: string')
+    expect((await cli('generate:types', '--cwd', dir, '--out', 'cms-types.ts')).code).toBe(0)
+    expect(readFileSync(join(dir, 'cms-types.ts'), 'utf8')).toContain('export interface Post {')
+  })
+
+  it('creates an admin from flags and EASY_CMS_ADMIN_PASSWORD (FR-INS-04)', async () => {
+    const dir = project()
+    process.env.EASY_CMS_ADMIN_PASSWORD = 'a strong password'
+    try {
+      expect(
+        await cli('create-admin', '--email', 'Ada@Example.com', '--name', 'Ada', '--cwd', dir),
+      ).toMatchObject({
+        code: 0,
+        out: expect.stringMatching(/Created admin ada@example\.com\. Log in at \/admin$/),
+      })
+      // Duplicate emails are reported, not thrown.
+      const again = await cli('create-admin', '--email', 'ada@example.com', '--cwd', dir)
+      expect(again).toMatchObject({ code: 1, err: 'email: must be unique' })
+    } finally {
+      delete process.env.EASY_CMS_ADMIN_PASSWORD
+    }
+  })
+
+  it('asks for the email and a hidden password in a terminal', async () => {
+    const dir = project()
+    const asked: { question: string; hidden: boolean }[] = []
+    const io: IO = {
+      out: () => {},
+      err: () => {},
+      interactive: true,
+      prompt: async (question, options) => {
+        asked.push({ question, hidden: options?.hidden === true })
+        return question.startsWith('Email') ? 'term@example.com' : 'short'
+      },
+    }
+    const errors: string[] = []
+    const code = await run(['create-admin', '--cwd', dir], { ...io, err: (l) => errors.push(l) })
+    expect(asked).toEqual([
+      { question: 'Email: ', hidden: false },
+      { question: 'Password (8+ characters): ', hidden: true },
+    ])
+    expect(code).toBe(1)
+    expect(errors).toEqual(['password: must be at least 8 characters'])
+  })
+
+  it('needs a password without a terminal', async () => {
+    const dir = project()
+    expect(await cli('create-admin', '--email', 'x@example.com', '--cwd', dir)).toMatchObject({
+      code: 1,
+      err: expect.stringContaining('EASY_CMS_ADMIN_PASSWORD'),
+    })
+  })
+
   it('reports config errors', async () => {
     const dir = project("[{ name: 'bad name', type: 'text' }]")
     const result = await cli('migrate:status', '--cwd', dir)

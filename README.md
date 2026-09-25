@@ -2,7 +2,19 @@
 
 Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
 
-> ⚠️ Early development (milestone M6). See [docs/DESIGN.md](docs/DESIGN.md) and [docs/SRS.md](docs/SRS.md).
+> v0.1 — first release candidate. Design: [docs/DESIGN.md](docs/DESIGN.md) · Requirements: [docs/SRS.md](docs/SRS.md) · Docs: [`website/`](website)
+
+## Quick start
+
+In a Nuxt 4 or Next.js 15+ project:
+
+```bash
+npx create-easy-cms
+npm run dev          # then open http://localhost:3000/admin
+```
+
+Define content in `easy-cms.config.ts`; read it with `useEasyCMS()` (Nuxt) or
+`getEasyCMS(config)` (Next.js), or over REST at `/api/cms`.
 
 ## Packages
 
@@ -16,7 +28,8 @@ Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
 | [`@easy-cms/richtext`](packages/richtext) | `renderRichText()`: Tiptap JSON → safe HTML |
 | [`@easy-cms/nuxt`](packages/nuxt) | Nuxt 4 module: REST API, admin, typed `useEasyCMS()` |
 | [`@easy-cms/next`](packages/next) | Next.js adapter: route handlers, typed `getEasyCMS()` |
-| [`easy-cms`](packages/cli) | CLI: `migrate`, `migrate:create`, `migrate:status` |
+| [`easy-cms`](packages/cli) | CLI: migrations, `generate:types`, `create-admin` |
+| [`create-easy-cms`](packages/create-easy-cms) | Adds Easy CMS to a Nuxt or Next.js project |
 
 ## Examples
 
@@ -41,5 +54,7 @@ End-to-end tests run the admin suite against both examples (Playwright, uses you
 ```bash
 pnpm test:e2e
 ```
+
+Docs: `pnpm --dir website dev`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 Add a changeset for user-facing changes with `pnpm changeset`.

@@ -384,6 +384,16 @@ v0.1 ผ่านการตรวจรับเมื่อครบทุก
 4. NFR-USE-01 (ติดตั้งจนถึง login ภายใน 2 นาที) ผ่านการทดสอบด้วยมือบน macOS และ Linux
 5. เว็บ docs ครบตาม NFR-DOC-01 และ publish ทุก package ขึ้น npm ได้
 
+### 7.1 ผลการตรวจรับ (2026-09-25)
+
+| เกณฑ์ | ผล |
+|---|---|
+| 1. ทุก requirement ระดับ MUST มี test | ✅ unit/integration 367 ข้อ (integration 101 ข้อ × SQLite, PGlite และ Postgres 17) |
+| 2. สถานการณ์ E2E บน Nuxt และ Next | ✅ Playwright ชุดเดียวกัน 13 ข้อ × 2 (Nuxt + SQLite, Next + Postgres/PGlite) ครอบทั้งการสร้าง admin คนแรก, draft/publish, global, สิทธิ์ของ editor, upload และ rich text |
+| 3. Integration บน SQLite และ PostgreSQL | ✅ รวมถึง Postgres 17 จริง (CI job `postgres`) |
+| 4. NFR-USE-01 ติดตั้งจนถึง login ภายใน 2 นาที | ✅ ทดสอบด้วยมือบน macOS กับโปรเจกต์ Nuxt และ Next ที่สร้างใหม่: 6–7 วินาที (package อยู่ใน cache แล้ว ถ้าดาวน์โหลดจริงจะขึ้นกับความเร็วของ npm) ส่วน Linux ยังไม่ได้ทดสอบด้วยมือ แต่ CI รัน e2e บน Linux |
+| 5. เว็บ docs และ publish ได้ | ✅ เว็บ docs ครบตาม NFR-DOC-01 (`website/`), ทุก package ผ่าน `publint` และมี changeset v0.1.0 พร้อมแล้ว ⏳ ยังไม่ได้ publish จริง (ต้องใช้สิทธิ์ของเจ้าของ npm) |
+
 ---
 
 ## 8. Traceability กับ Milestones
@@ -409,4 +419,5 @@ v0.1 ผ่านการตรวจรับเมื่อครบทุก
 | 1.1 | 2026-09-25 | เปลี่ยน Node ขั้นต่ำเป็น 22.12 เพราะ Node 20 EOL แล้ว |
 | 1.2 | 2026-09-25 | M2: เพิ่ม FR-REST-05 (init, first-register), FR-REST-07 (Bearer), FR-AUTH-10 (roles, admin คนสุดท้าย) |
 | 1.3 | 2026-09-25 | M5: FR-REST-08 (อัปโหลด/ไฟล์), FR-CFG-07 (`routes.api`, `serverURL`), ระบุว่า drafts ใน v0.1 ไม่มี version แยก |
+| 1.5 | 2026-09-25 | M7: ผลตรวจรับ v0.1 (7.1) |
 | 1.4 | 2026-09-25 | M6: ผลวัด NFR-PERF-01/02 บน Postgres 17 (Local API p95 2.7 ms, REST p95 4.3 ms), Next.js adapter ใช้ `getEasyCMS(config)` |

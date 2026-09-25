@@ -144,3 +144,12 @@ describe('built-in media', () => {
     expectTypeOf<Media['url']>().toEqualTypeOf<string>()
   })
 })
+
+describe('APIs accept typed instances', () => {
+  it('createRestHandler takes EasyCMS<typeof config>', () => {
+    type Typed = import('../src/index.js').EasyCMS<Config>
+    expectTypeOf<
+      Parameters<typeof import('../src/index.js').createRestHandler<Config>>[0]
+    >().toEqualTypeOf<Typed>()
+  })
+})

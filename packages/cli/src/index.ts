@@ -1,18 +1,52 @@
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { writeFile } from 'node:fs/promises'
+import { isAbsolute, join, resolve } from 'node:path'
+import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
-import { ConfigError, createEasyCMS, EasyCMSError, type Logger, loadConfig } from '@easy-cms/core'
+import {
+  ConfigError,
+  createEasyCMS,
+  EasyCMSError,
+  generateTypes,
+  type Logger,
+  loadConfig,
+  ValidationError,
+} from '@easy-cms/core'
 
 export interface IO {
   readonly out: (line: string) => void
   readonly err: (line: string) => void
   readonly interactive: boolean
+  /** Asks a question in the terminal. `hidden` does not echo what is typed (passwords). */
+  readonly prompt?: (question: string, options?: { hidden?: boolean }) => Promise<string>
+}
+
+async function ask(question: string, options: { hidden?: boolean } = {}): Promise<string> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true })
+  if (options.hidden) {
+    // Echo nothing while the password is typed.
+    const output = rl as unknown as { _writeToOutput: (s: string) => void }
+    let asked = false
+    output._writeToOutput = (text: string) => {
+      if (!asked) {
+        process.stdout.write(text)
+        asked = true
+      }
+    }
+  }
+  try {
+    return (await rl.question(question)).trim()
+  } finally {
+    if (options.hidden) process.stdout.write('\n')
+    rl.close()
+  }
 }
 
 const defaultIO: IO = {
   out: (line) => console.log(line),
   err: (line) => console.error(line),
   interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+  prompt: ask,
 }
 
 const HELP = `Usage: easy-cms <command> [options]
@@ -21,6 +55,8 @@ Commands:
   migrate                 Apply pending migrations
   migrate:create <name>   Create a migration from config changes
   migrate:status          List migrations and whether they are applied
+  generate:types          Write TypeScript types for your collections and globals
+  create-admin            Create an admin user
 
 Options:
   --config <file>         Config file (default: easy-cms.config.ts)
@@ -43,6 +79,16 @@ In a terminal you are asked whether changed fields were renamed.
   'migrate:status': `Usage: easy-cms migrate:status [options]
 
 Lists migration files and whether each has been applied.
+`,
+  'generate:types': `Usage: easy-cms generate:types [--out <file>] [options]
+
+Writes interfaces for every collection and global (default: easy-cms-types.ts).
+The file has no imports, so a frontend in another repository can copy it.
+`,
+  'create-admin': `Usage: easy-cms create-admin [--email <email>] [--name <name>] [--role <role>] [options]
+
+Creates a user (role "admin" unless --role is given). The password is asked for in the
+terminal, or read from EASY_CMS_ADMIN_PASSWORD when there is no terminal.
 `,
 }
 
@@ -82,12 +128,17 @@ export async function run(argv: readonly string[], io: IO = defaultIO): Promise<
       cwd,
       ...(values.config ? { configFile: values.config } : {}),
     })
-    const cms = await createEasyCMS(config, {
-      cwd,
-      schema: 'skip',
-      logger,
-      interactive: io.interactive,
-    })
+    if (command === 'generate:types') {
+      const out = values.out ?? 'easy-cms-types.ts'
+      const file = isAbsolute(out) ? out : resolve(cwd, out)
+      await writeFile(file, generateTypes(config))
+      io.out(`Wrote ${file}`)
+      return 0
+    }
+    // create-admin writes a user, so the schema must exist: push in development like the app does.
+    const schema =
+      command === 'create-admin' && process.env.NODE_ENV !== 'production' ? 'push' : 'skip'
+    const cms = await createEasyCMS(config, { cwd, schema, logger, interactive: io.interactive })
     try {
       switch (command) {
         case 'migrate': {
@@ -114,6 +165,40 @@ export async function run(argv: readonly string[], io: IO = defaultIO): Promise<
             io.out('Review it, commit it, then run `easy-cms migrate` where you deploy.')
           }
           return 0
+        }
+        case 'create-admin': {
+          const email =
+            values.email ?? (io.interactive && io.prompt ? await io.prompt('Email: ') : '')
+          if (!email) {
+            io.err('Missing --email.\n')
+            io.err(COMMAND_HELP['create-admin'] as string)
+            return 1
+          }
+          const password =
+            process.env.EASY_CMS_ADMIN_PASSWORD ??
+            (io.interactive && io.prompt
+              ? await io.prompt('Password (8+ characters): ', { hidden: true })
+              : '')
+          if (!password) {
+            io.err('Missing password: run in a terminal or set EASY_CMS_ADMIN_PASSWORD.')
+            return 1
+          }
+          try {
+            const user = await cms.create('users', {
+              email,
+              password,
+              role: values.role ?? 'admin',
+              ...(values.name ? { name: values.name } : {}),
+            })
+            io.out(`Created ${user.role} ${user.email}. Log in at ${cms.config.admin.path}`)
+            return 0
+          } catch (error) {
+            if (error instanceof ValidationError) {
+              for (const e of error.errors) io.err(`${e.field}: ${e.message}`)
+              return 1
+            }
+            throw error
+          }
         }
         case 'migrate:status': {
           const list = await cms.db.migrationStatus()
@@ -143,6 +228,10 @@ function parse(argv: readonly string[]) {
     options: {
       config: { type: 'string' },
       cwd: { type: 'string' },
+      out: { type: 'string' },
+      email: { type: 'string' },
+      name: { type: 'string' },
+      role: { type: 'string' },
       help: { type: 'boolean', short: 'h' },
     },
   })

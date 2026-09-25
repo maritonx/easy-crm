@@ -97,4 +97,5 @@ export {
   type StorageAdapter,
   type StoredFile,
 } from './storage.js'
+export { generateTypes, singularize } from './typegen.js'
 export { BUILTIN_COLLECTIONS, MIN_SECRET_LENGTH, validateConfig } from './validate-config.js'

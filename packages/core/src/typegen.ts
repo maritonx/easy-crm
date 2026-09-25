@@ -1,0 +1,172 @@
+import { INTERNAL_COLLECTIONS, MEDIA } from './builtins.js'
+import type { CollectionConfig, GlobalConfig, ResolvedConfig } from './config.js'
+import type { Field } from './fields.js'
+
+const pascal = (name: string) =>
+  name
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')
+
+/** Best-effort English singular: "categories" → "category". */
+export function singularize(word: string): string {
+  if (/ies$/i.test(word)) return word.replace(/ies$/i, 'y')
+  if (/(ss|us|ia)$/i.test(word)) return word
+  if (/(x|ch|sh)es$/i.test(word)) return word.replace(/es$/i, '')
+  return word.replace(/s$/i, '')
+}
+
+const quote = (value: string) => JSON.stringify(value)
+const key = (name: string) => (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : quote(name))
+
+interface Names {
+  collections: Map<string, string>
+  globals: Map<string, string>
+}
+
+function names(config: ResolvedConfig): Names {
+  const taken = new Set(['ID', 'RichTextDocument', 'MediaSize', 'Collections', 'Globals'])
+  const claim = (base: string, suffix: string) => {
+    let name = base || suffix
+    if (taken.has(name)) name = `${base}${suffix}`
+    for (let n = 2; taken.has(name); n++) name = `${base}${suffix}${n}`
+    taken.add(name)
+    return name
+  }
+  const collections = new Map<string, string>()
+  for (const c of config.collections) {
+    if (!INTERNAL_COLLECTIONS.has(c.slug))
+      collections.set(c.slug, claim(pascal(singularize(c.slug)), 'Document'))
+  }
+  const globals = new Map<string, string>()
+  for (const g of config.globals) globals.set(g.slug, claim(pascal(g.slug), 'Global'))
+  return { collections, globals }
+}
+
+function fieldType(field: Field, n: Names, indent: string): string {
+  switch (field.type) {
+    case 'text':
+    case 'textarea':
+    case 'email':
+    case 'slug':
+    case 'date':
+      return 'string'
+    case 'number':
+      return 'number'
+    case 'boolean':
+      return 'boolean'
+    case 'json':
+      return 'unknown'
+    case 'richText':
+      return 'RichTextDocument'
+    case 'select': {
+      const union =
+        field.options.map((o) => quote(typeof o === 'string' ? o : o.value)).join(' | ') || 'string'
+      return field.hasMany ? `(${union})[]` : union
+    }
+    case 'upload':
+      return `ID | ${n.collections.get(MEDIA) ?? 'Record<string, unknown>'}`
+    case 'relationship': {
+      const target = n.collections.get(field.to)
+      const one = target ? `ID | ${target}` : 'ID'
+      return field.hasMany ? `(${one})[]` : one
+    }
+    case 'group':
+      return `{\n${fieldLines(field.fields, n, `${indent}  `).join('\n')}\n${indent}}`
+    case 'array':
+      return `{\n${indent}  id: string\n${fieldLines(field.fields, n, `${indent}  `).join('\n')}\n${indent}}[]`
+  }
+}
+
+function fieldLines(fields: readonly Field[], n: Names, indent: string): string[] {
+  const lines: string[] = []
+  for (const field of fields) {
+    if (field.hidden) continue
+    const type = fieldType(field, n, indent)
+    // Arrays and hasMany values are always arrays (possibly empty); groups are always objects.
+    const alwaysPresent =
+      field.type === 'array' ||
+      field.type === 'group' ||
+      ((field.type === 'select' || field.type === 'relationship') && field.hasMany)
+    if (field.required || alwaysPresent) lines.push(`${indent}${key(field.name)}: ${type}`)
+    else lines.push(`${indent}${key(field.name)}?: ${type} | null`)
+  }
+  return lines
+}
+
+function collectionInterface(collection: CollectionConfig, name: string, n: Names): string {
+  const lines = ['  id: ID']
+  if (collection.slug === MEDIA) {
+    // File metadata comes from the upload; url and sizes are added when reading.
+    lines.push('  url: string', '  sizes: Record<string, MediaSize>')
+  }
+  // Media's stored `sizes` (JSON) is replaced by the typed version above.
+  const fields =
+    collection.slug === MEDIA
+      ? collection.fields.filter((f) => f.name !== 'sizes')
+      : collection.fields
+  lines.push(...fieldLines(fields, n, '  '))
+  if (collection.drafts) lines.push(`  status: 'draft' | 'published'`)
+  lines.push('  createdAt: string', '  updatedAt: string')
+  return `export interface ${name} {\n${lines.join('\n')}\n}`
+}
+
+function globalInterface(global: GlobalConfig, name: string, n: Names): string {
+  const lines = [...fieldLines(global.fields, n, '  ')]
+  if (global.drafts) lines.push(`  status: 'draft' | 'published'`)
+  lines.push(
+    '  /** `null` until the global is saved for the first time. */',
+    '  updatedAt: string | null',
+  )
+  return `export interface ${name} {\n${lines.join('\n')}\n}`
+}
+
+/**
+ * TypeScript declarations for every collection and global, as the REST API returns them.
+ * The output has no imports, so a frontend in another repository can use it as is.
+ */
+export function generateTypes(config: ResolvedConfig): string {
+  const n = names(config)
+  const parts = [
+    '// Generated by `easy-cms generate:types`. Do not edit; run the command again after changing the config.',
+    '',
+    '/** Document ids are integers. */',
+    'export type ID = number',
+    '',
+    '/** Rich text as stored: a Tiptap / ProseMirror JSON document. */',
+    'export interface RichTextDocument {',
+    `  type: 'doc'`,
+    '  content?: unknown[]',
+    '}',
+    '',
+    'export interface MediaSize {',
+    '  filename: string',
+    '  width: number',
+    '  height: number',
+    '  filesize: number',
+    '  url: string',
+    '}',
+  ]
+  for (const collection of config.collections) {
+    const name = n.collections.get(collection.slug)
+    if (name) parts.push('', collectionInterface(collection, name, n))
+  }
+  for (const global of config.globals) {
+    parts.push('', globalInterface(global, n.globals.get(global.slug) as string, n))
+  }
+  const map = (entries: Map<string, string>) =>
+    [...entries].map(([slug, name]) => `  ${key(slug)}: ${name}`).join('\n')
+  parts.push(
+    '',
+    '/** Document type by collection slug. */',
+    `export interface Collections {\n${map(n.collections)}\n}`,
+  )
+  parts.push(
+    '',
+    '/** Data type by global slug. */',
+    `export interface Globals {\n${map(n.globals)}\n}`,
+    '',
+  )
+  return parts.join('\n')
+}
