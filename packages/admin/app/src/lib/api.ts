@@ -42,7 +42,9 @@ export function setUnauthorizedHandler(handler: () => void) {
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' }
-  if (body !== undefined) headers['content-type'] = 'application/json'
+  const multipart = body instanceof FormData
+  // The browser sets the multipart boundary itself.
+  if (body !== undefined && !multipart) headers['content-type'] = 'application/json'
   const csrf = cookie('ecms-csrf')
   if (csrf && method !== 'GET') headers['x-csrf-token'] = csrf
 
@@ -50,7 +52,7 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
     method,
     headers,
     credentials: 'same-origin',
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    ...(body !== undefined ? { body: multipart ? body : JSON.stringify(body) } : {}),
   })
   const text = await response.text()
   const data = text ? JSON.parse(text) : undefined
@@ -88,3 +90,11 @@ export interface Paginated<T> {
 }
 
 export type Doc = Record<string, unknown> & { id: number | string }
+
+/** Uploads one file to the media library. */
+export function uploadFile(file: File, alt?: string): Promise<Doc> {
+  const form = new FormData()
+  form.set('file', file)
+  if (alt) form.set('alt', alt)
+  return api<Doc>('POST', '/media?depth=0', form)
+}

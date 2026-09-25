@@ -1,11 +1,23 @@
+import { fileURLToPath } from 'node:url'
 import { expect, type Page, test } from '@playwright/test'
 
 const ADMIN = { email: 'admin@e2e.test', password: 'admin-password-1' }
 const EDITOR = { email: 'editor@e2e.test', password: 'editor-password-1' }
 const SHOTS = process.env.E2E_SCREENSHOTS
+const PHOTO = fileURLToPath(new URL('../fixtures/photo.png', import.meta.url))
 
 // Tests build on each other: the first creates the admin, later ones use its content.
 test.describe.configure({ mode: 'serial' })
+
+// Any uncaught error in the page fails the test.
+let pageErrors: string[] = []
+test.beforeEach(({ page }) => {
+  pageErrors = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+})
+test.afterEach(() => {
+  expect(pageErrors, 'uncaught errors in the page').toEqual([])
+})
 
 async function english(page: Page) {
   await page.addInitScript(() => localStorage.setItem('easy-cms-locale', 'en'))
@@ -67,7 +79,7 @@ test.describe('logged in as admin', () => {
 
   test('shows collections and globals in the sidebar (FR-ADM-03)', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main' })
-    for (const name of ['Users', 'Categories', 'Posts', 'Site']) {
+    for (const name of ['Users', 'Media', 'Categories', 'Posts', 'Site']) {
       await expect(nav.getByRole('link', { name, exact: true })).toBeVisible()
     }
   })
@@ -145,6 +157,74 @@ test.describe('logged in as admin', () => {
     await expect(page.getByText('Draft', { exact: true })).toBeVisible()
     await page.goto('/')
     await expect(page.getByText('Secret draft')).toHaveCount(0)
+  })
+
+  test('uploads to the media library and uses a file as a cover (FR-UPL, FR-ADM-09)', async ({
+    page,
+  }) => {
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'Media' })
+      .click()
+    await page.getByLabel('Upload files').setInputFiles(PHOTO)
+    await expect(page.getByText('Uploaded 1 file(s)')).toBeVisible()
+    const row = page.getByRole('row').filter({ hasText: /photo-[0-9a-f]{8}\.png/ })
+    await expect(row.locator('img')).toBeVisible()
+    await shot(page, '05-media-library')
+
+    // Alt text is editable; file metadata is not.
+    await row.getByRole('link').click()
+    await expect(page.locator('.thumb.large img')).toBeVisible()
+    await expect(page.getByText(/640 × 360 px/)).toBeVisible()
+    await page.getByLabel('Alternative text').fill('A green circle')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByRole('status')).toHaveText('Saved')
+
+    // Pick it as the cover of the published post.
+    await page.goto('/admin/collections/posts?q=Hello')
+    await page.getByRole('link', { name: 'Hello from Playwright' }).click()
+    await page.getByRole('button', { name: 'Choose from media library' }).click()
+    const picker = page.getByRole('dialog', { name: 'Choose a file' })
+    await picker.getByRole('button', { name: 'A green circle' }).click()
+    await expect(picker).toBeHidden()
+    await expect(page.getByRole('link', { name: 'A green circle' })).toBeVisible()
+
+    // Insert the same image into the body from the toolbar.
+    await page.locator('.rte-content').click()
+    await page.keyboard.press('End')
+    await page.getByRole('button', { name: 'Image' }).click()
+    await picker.getByRole('button', { name: 'A green circle' }).click()
+    await expect(page.locator('.rte-content img')).toHaveAttribute('alt', 'A green circle')
+    await shot(page, '06-post-with-media')
+
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(page.getByRole('status')).toHaveText('Saved')
+
+    await page.goto('/')
+    const cover = page.getByRole('img', { name: 'A green circle' })
+    await expect(cover).toBeVisible()
+    await expect(cover).toHaveAttribute('src', /\/api\/cms\/media\/file\/photo-[0-9a-f]{8}\.png$/)
+    await page.getByRole('link', { name: 'Hello from Playwright' }).click()
+    await expect(page.locator('.body img')).toHaveAttribute('alt', 'A green circle')
+  })
+
+  test('unpublishes and republishes (FR-DRF-05)', async ({ page }) => {
+    await page.goto('/admin/collections/posts?q=Hello')
+    await page.getByRole('link', { name: 'Hello from Playwright' }).click()
+    await page.getByRole('button', { name: 'Unpublish' }).click()
+    await expect(page.getByRole('status')).toHaveText('Unpublished')
+    await expect(page.getByText('Draft', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Publish' })).toBeVisible()
+
+    await page.goto('/')
+    await expect(page.getByRole('link', { name: 'Hello from Playwright' })).toHaveCount(0)
+
+    await page.goto('/admin/collections/posts?q=Hello')
+    await page.getByRole('link', { name: 'Hello from Playwright' }).click()
+    await page.getByRole('button', { name: 'Publish' }).click()
+    await expect(page.getByText('Published', { exact: true })).toBeVisible()
+    await page.goto('/')
+    await expect(page.getByRole('link', { name: 'Hello from Playwright' })).toBeVisible()
   })
 
   test('lists, searches, sorts and bulk-deletes (FR-ADM-04)', async ({ page }) => {

@@ -256,3 +256,4 @@ easy-cms serve               # standalone (v0.2)
 - [ADR-0005](adr/0005-storage-layout.md) — รูปแบบการเก็บข้อมูลและ migration
 - [ADR-0006](adr/0006-nuxt-adapter.md) — โครงสร้างของ Nuxt adapter
 - [ADR-0007](adr/0007-admin-ui.md) — โครงสร้างของหน้า Admin
+- [ADR-0008](adr/0008-media-drafts-hooks.md) — Media, drafts และ hooks

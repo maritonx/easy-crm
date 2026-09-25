@@ -3,6 +3,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import MediaThumb from '../components/MediaThumb.vue'
+import UploadDropzone from '../components/UploadDropzone.vue'
 import { ApiError, api, type Doc, type Paginated, toQuery } from '../lib/api'
 import { titleOf } from '../lib/fields'
 import { formatDate, humanize, label, t } from '../lib/i18n'
@@ -13,6 +15,7 @@ const router = useRouter()
 const slug = String(route.params.slug)
 const collection = findCollection(slug)
 const PAGE_SIZE = 20
+const isMedia = slug === 'media'
 
 const titleField = collection?.useAsTitle
 const titleLabel = computed(() => {
@@ -41,7 +44,7 @@ async function load() {
     const where = search.value && titleField ? { [titleField]: { like: search.value } } : undefined
     result.value = await api<Paginated<Doc>>(
       'GET',
-      `/${slug}${toQuery({ where, sort: sort.value, limit: PAGE_SIZE, page: page.value, depth: 0 })}`,
+      `/${slug}${toQuery({ where, sort: sort.value, limit: PAGE_SIZE, page: page.value, depth: 0, draft: true })}`,
     )
     selected.value = new Set()
   } catch (e) {
@@ -110,7 +113,8 @@ async function deleteSelected() {
   <template v-else>
     <header class="toolbar">
       <h1>{{ label(collection.labels?.plural, collection.slug) }}</h1>
-      <RouterLink v-if="collection.permissions.create" :to="`/collections/${slug}/new`" class="btn btn-primary">
+      <!-- Media is created by uploading, below. -->
+      <RouterLink v-if="collection.permissions.create && !isMedia" :to="`/collections/${slug}/new`" class="btn btn-primary">
         {{ t('list.new') }}
       </RouterLink>
     </header>
@@ -128,6 +132,8 @@ async function deleteSelected() {
       </div>
     </div>
 
+    <UploadDropzone v-if="isMedia && collection.permissions.create" class="dropzone" @uploaded="load" />
+
     <p v-if="error" class="notice notice-error" role="alert">{{ error }}</p>
 
     <div class="card table-wrap" :aria-busy="loading">
@@ -137,6 +143,7 @@ async function deleteSelected() {
             <th class="check">
               <input type="checkbox" :checked="allSelected" :aria-label="t('list.selectAll')" @change="toggleAll" />
             </th>
+            <th v-if="isMedia" class="preview"><span class="visually-hidden">{{ t('media.preview') }}</span></th>
             <th :aria-sort="titleField ? sortState(titleField) : undefined">
               <button v-if="titleField" type="button" class="sort" @click="toggleSort(titleField)">
                 {{ titleLabel }} <span aria-hidden="true">{{ { ascending: '↑', descending: '↓', none: '' }[sortState(titleField)] }}</span>
@@ -161,6 +168,7 @@ async function deleteSelected() {
                 @change="toggle(doc.id)"
               />
             </td>
+            <td v-if="isMedia" class="preview"><MediaThumb :media="doc" /></td>
             <td>
               <RouterLink :to="`/collections/${slug}/${doc.id}`" class="title-link">{{ titleOf(collection, doc) }}</RouterLink>
             </td>
@@ -248,6 +256,14 @@ tr.selected {
 }
 .check {
   width: 2.5rem;
+}
+.preview {
+  width: 4rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+.dropzone {
+  margin-bottom: 0.75rem;
 }
 .check input {
   accent-color: var(--accent);

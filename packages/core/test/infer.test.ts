@@ -64,7 +64,7 @@ type Author = CollectionDocument<Config, 'authors'>
 
 describe('type inference', () => {
   it('lists slugs', () => {
-    expectTypeOf<CollectionSlug<Config>>().toEqualTypeOf<'posts' | 'authors' | 'users'>()
+    expectTypeOf<CollectionSlug<Config>>().toEqualTypeOf<'posts' | 'authors' | 'users' | 'media'>()
   })
 
   it('adds system fields', () => {
@@ -134,5 +134,13 @@ describe('input types', () => {
 
   it('makes every field optional on update', () => {
     expectTypeOf<{ views: 1 }>().toExtend<import('../src/index.js').UpdateInput<Config, 'posts'>>()
+  })
+})
+
+describe('built-in media', () => {
+  it('types media documents with url and sizes', () => {
+    type Media = CollectionDocument<Config, 'media'>
+    expectTypeOf<Media>().toEqualTypeOf<MediaDocument>()
+    expectTypeOf<Media['url']>().toEqualTypeOf<string>()
   })
 })

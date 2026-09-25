@@ -12,11 +12,12 @@ describe('loadConfig (FR-CFG-01)', () => {
     expect(config.admin.locale).toBe('th')
     expect(config.collections.map((c) => c.slug)).toEqual([
       'users',
+      'media',
       'posts',
       'sessions',
       'login-attempts',
     ])
-    expect(typeof config.collections[1]?.access?.update).toBe('function')
+    expect(typeof config.collections[2]?.access?.update).toBe('function')
   })
 
   it('finds the config file', () => {
@@ -26,7 +27,7 @@ describe('loadConfig (FR-CFG-01)', () => {
 
   it('accepts an explicit file', async () => {
     const config = await loadConfig({ cwd: fixture('.'), configFile: 'ts/easy-cms.config.ts' })
-    expect(config.collections).toHaveLength(4)
+    expect(config.collections).toHaveLength(5)
   })
 
   it('explains how to create a config when none exists', async () => {

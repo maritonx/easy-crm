@@ -1,26 +1,27 @@
 import type { AuthUser } from '../access.js'
 import type { Session } from '../auth/auth.js'
 import { safeEqual } from '../auth/tokens.js'
-import { INTERNAL_COLLECTIONS, USERS } from '../builtins.js'
+import { INTERNAL_COLLECTIONS, MEDIA, USERS } from '../builtins.js'
 import {
   EasyCMSError,
   ForbiddenError,
   NotFoundError,
+  PayloadTooLargeError,
   UnauthorizedError,
   ValidationError,
 } from '../errors.js'
 import type { EasyCMS } from '../local-api.js'
+import { EXTENSIONS } from '../media.js'
 import { adminSchema } from './admin-schema.js'
 import { parseDepth, parseListQuery } from './query.js'
 
 export const SESSION_COOKIE = 'ecms-session'
 export const CSRF_COOKIE = 'ecms-csrf'
 export const CSRF_HEADER = 'x-csrf-token'
-export const DEFAULT_API_PATH = '/api/cms'
 const MAX_BODY_BYTES = 1024 * 1024
 
 export interface RestHandlerOptions {
-  /** Path the handler is mounted at. Default `/api/cms`. */
+  /** Path the handler is mounted at. Default: `routes.api` from the config (`/api/cms`). */
   readonly basePath?: string
   /** Client IP, used with the email to rate-limit logins. Adapters provide it. */
   readonly getClientIp?: (request: Request) => string | undefined
@@ -42,7 +43,7 @@ interface Context {
 
 /** Creates the REST API as a Web-standard `(Request) => Response` handler. */
 export function createRestHandler(cms: EasyCMS, options: RestHandlerOptions = {}): RestHandler {
-  const basePath = (options.basePath ?? DEFAULT_API_PATH).replace(/\/+$/, '')
+  const basePath = (options.basePath ?? cms.config.routes.api).replace(/\/+$/, '')
   const production = process.env.NODE_ENV === 'production'
 
   return async (request) => {
@@ -70,6 +71,7 @@ export function createRestHandler(cms: EasyCMS, options: RestHandlerOptions = {}
       if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') checkCsrf(cms, ctx)
 
       const result = await route(cms, ctx, method, segments, options)
+      if (result.body instanceof Response) return result.body
       return new Response(JSON.stringify(result.body), { status: result.status ?? 200, headers })
     } catch (error) {
       return errorResponse(cms, error, headers, production)
@@ -91,6 +93,8 @@ async function route(
 ): Promise<Result> {
   const [first, second, third] = segments
   const access = { overrideAccess: false, user: ctx.user } as const
+  // Drafts are only for logged-in users; anonymous requests always see published documents.
+  const draft = ctx.user !== null && ctx.url.searchParams.get('draft') === 'true'
 
   if (segments.length === 0) throw new HttpError('Not found', 404)
 
@@ -166,12 +170,25 @@ async function route(
     if (!cms.config.globals.some((g) => g.slug === second))
       throw new HttpError(`Unknown global "${second}"`, 404)
     if (method === 'GET')
-      return { body: await cms.findGlobal(second, { ...access, ...parseDepth(ctx.url) }) }
+      return { body: await cms.findGlobal(second, { ...access, ...parseDepth(ctx.url), draft }) }
     if (method === 'POST') {
       const body = await readJson(ctx.request)
       return { body: await cms.updateGlobal(second, body, { ...access, ...parseDepth(ctx.url) }) }
     }
     throw methodNotAllowed(ctx, 'GET, POST')
+  }
+
+  // Media files are public and immutable (their names are unique).
+  if (first === MEDIA && second === 'file' && third !== undefined && segments.length === 3) {
+    if (method !== 'GET' && method !== 'HEAD') throw methodNotAllowed(ctx, 'GET, HEAD')
+    return { body: await serveFile(cms, third, method === 'HEAD') }
+  }
+  if (first === MEDIA && second === undefined && method === 'POST') {
+    const { file, data } = await readUpload(ctx.request, cms.config.upload.maxFileSize)
+    return {
+      status: 201,
+      body: await cms.upload(file, data, { ...access, ...parseDepth(ctx.url) }),
+    }
   }
 
   // Collections
@@ -187,7 +204,7 @@ async function route(
   if (second === undefined) {
     if (method === 'GET') {
       const query = parseListQuery(ctx.url)
-      return { body: await cms.find(collection, { ...access, ...query }) }
+      return { body: await cms.find(collection, { ...access, ...query, draft }) }
     }
     if (method === 'POST') {
       const body = await readJson(ctx.request)
@@ -201,7 +218,7 @@ async function route(
 
   const id = second
   if (method === 'GET') {
-    const doc = await cms.findById(collection, id, { ...access, ...parseDepth(ctx.url) })
+    const doc = await cms.findById(collection, id, { ...access, ...parseDepth(ctx.url), draft })
     if (!doc) throw new NotFoundError(collection, id)
     return { body: doc }
   }
@@ -275,6 +292,65 @@ function checkCsrf(cms: EasyCMS, ctx: Context) {
         `CSRF check failed: send the ${CSRF_HEADER} header from GET /users/me`,
       )
     }
+  }
+}
+
+const TYPE_BY_EXTENSION = Object.fromEntries(
+  Object.entries(EXTENSIONS).map(([type, ext]) => [ext, type]),
+)
+
+/** Serves a stored file with headers that stop uploaded SVG from running scripts. */
+async function serveFile(cms: EasyCMS, key: string, head: boolean): Promise<Response> {
+  if (!/^[\p{L}\p{M}\p{N}-]+\.[a-z0-9]+$/u.test(key)) throw new HttpError('Not found', 404)
+  const file = await cms.storage.get(key)
+  if (!file) throw new HttpError('Not found', 404)
+  const extension = key.slice(key.lastIndexOf('.') + 1)
+  return new Response(
+    head ? null : (file.body as unknown as ConstructorParameters<typeof Response>[0]),
+    {
+      status: 200,
+      headers: {
+        'content-type': TYPE_BY_EXTENSION[extension] ?? 'application/octet-stream',
+        'content-length': String(file.size),
+        'cache-control': 'public, max-age=31536000, immutable',
+        'x-content-type-options': 'nosniff',
+        'content-security-policy':
+          "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+        'cross-origin-resource-policy': 'cross-origin',
+      },
+    },
+  )
+}
+
+/** Reads `multipart/form-data` with a `file` part; other string parts become document data. */
+async function readUpload(
+  request: Request,
+  maxFileSize: number,
+): Promise<{ file: { data: Uint8Array; name: string }; data: Record<string, unknown> }> {
+  const type = request.headers.get('content-type') ?? ''
+  if (!type.toLowerCase().startsWith('multipart/form-data')) {
+    throw new HttpError('Uploads must be multipart/form-data with a "file" field', 415)
+  }
+  const declared = Number(request.headers.get('content-length') ?? 0)
+  // Leave room for the multipart envelope and the other fields.
+  if (declared > maxFileSize + 64 * 1024)
+    throw new PayloadTooLargeError(`File is larger than ${maxFileSize} bytes`)
+  let form: FormData
+  try {
+    form = await request.formData()
+  } catch {
+    throw new HttpError('Malformed multipart body', 400)
+  }
+  const file = form.get('file')
+  if (!file || typeof file === 'string')
+    throw new ValidationError(MEDIA, [{ field: 'file', message: 'is required' }])
+  const data: Record<string, unknown> = {}
+  for (const [key, value] of form) {
+    if (key !== 'file' && typeof value === 'string') data[key] = value
+  }
+  return {
+    file: { data: new Uint8Array(await file.arrayBuffer()), name: file.name || 'file' },
+    data,
   }
 }
 

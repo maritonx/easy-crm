@@ -31,7 +31,7 @@ async function loadTitles(ids: Id[]) {
   try {
     const result = await api<Paginated<Doc>>(
       'GET',
-      `/${props.to}${toQuery({ where: { id: { in: missing } }, limit: 100, depth: 0 })}`,
+      `/${props.to}${toQuery({ where: { id: { in: missing } }, limit: 100, depth: 0, draft: true })}`,
     )
     for (const doc of result.docs) titles.value[String(doc.id)] = titleOf(target, doc)
   } catch {
@@ -54,7 +54,7 @@ async function search() {
   try {
     const result = await api<Paginated<Doc>>(
       'GET',
-      `/${props.to}${toQuery({ where, limit: 10, depth: 0, sort: field ?? '-updatedAt' })}`,
+      `/${props.to}${toQuery({ where, limit: 10, depth: 0, draft: true, sort: field ?? '-updatedAt' })}`,
     )
     options.value = result.docs.filter((d) => !selectedIds.value.includes(d.id))
     for (const doc of result.docs) titles.value[String(doc.id)] = titleOf(target, doc)

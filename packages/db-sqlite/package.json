@@ -32,7 +32,8 @@
     "@easy-cms/core": "workspace:^"
   },
   "devDependencies": {
-    "@easy-cms/core": "workspace:^"
+    "@easy-cms/core": "workspace:^",
+    "sharp": "^0.35.4"
   },
   "publishConfig": {
     "access": "public",

@@ -107,6 +107,7 @@ Host app ─► Local API ┘
 | FR-CFG-04 | ระบบต้องไม่ start ถ้าไม่มี `secret` หรือ secret สั้นกว่า 32 ตัวอักษร | MUST |
 | FR-CFG-05 | Plugin คือฟังก์ชัน `(config) => config` และต้องรันตามลำดับก่อนการตรวจ config | MUST |
 | FR-CFG-06 | Collection `users` ต้องถูกเพิ่มให้อัตโนมัติ และ developer เพิ่ม field ของตัวเองเข้าไปได้ | MUST |
+| FR-CFG-07 | `routes.api` กำหนด path ของ REST API (default `/api/cms`) และ `serverURL` ทำให้ URL ของไฟล์เป็นแบบเต็ม | MUST |
 
 ### 3.3 Content Modeling (MOD)
 
@@ -156,6 +157,7 @@ Host app ─► Local API ┘
 | FR-REST-04 | Error ต้องคืน JSON รูปแบบ `{ errors: [{ message, field? }] }` พร้อม status code ที่เหมาะสม (400, 401, 403, 404, 409, 413, 429, 500) | MUST |
 | FR-REST-05 | ต้องมี auth endpoints: `POST /users/login`, `POST /users/logout`, `GET /users/me`, `GET /users/init` (มี user แล้วหรือยัง), `POST /users/first-register` (สร้าง admin คนแรก) | MUST |
 | FR-REST-07 | ต้องรับ `Authorization: Bearer <token>` สำหรับ client ที่ไม่ใช่ browser (ไม่ต้องใช้ CSRF token) | SHOULD |
+| FR-REST-08 | `POST /media` (multipart, field `file`) สำหรับอัปโหลด และ `GET /media/file/:key` สำหรับเสิร์ฟไฟล์แบบ public พร้อม CSP `sandbox` | MUST |
 | FR-REST-06 | Error 500 ต้องไม่ส่ง stack trace กลับไปใน production | MUST |
 
 ### 3.7 Authentication (AUTH)
@@ -193,6 +195,7 @@ Host app ─► Local API ┘
 | FR-DRF-03 | Publish ต้องตรวจ validation ครบทุกข้อ | MUST |
 | FR-DRF-04 | Local API และ REST ต้องรองรับ `draft: true` เพื่อดึงข้อมูลที่รวม draft และ default ต้องคืนเฉพาะ `published` เมื่อไม่ได้ login | MUST |
 | FR-DRF-05 | ต้อง unpublish (เปลี่ยนกลับเป็น draft) ได้ | MUST |
+| FR-DRF-06 | ใน v0.1 เอกสารมีฉบับเดียว: ถ้าบันทึกเอกสารที่ published เป็น draft จะเท่ากับ unpublish (version history อยู่ใน v2) | MUST |
 
 ### 3.10 Media / Upload (UPL)
 
@@ -403,3 +406,4 @@ v0.1 ผ่านการตรวจรับเมื่อครบทุก
 | 1.0 | 2026-09-25 | ฉบับแรก จากการสรุปการออกแบบใน [DESIGN.md](DESIGN.md) |
 | 1.1 | 2026-09-25 | เปลี่ยน Node ขั้นต่ำเป็น 22.12 เพราะ Node 20 EOL แล้ว |
 | 1.2 | 2026-09-25 | M2: เพิ่ม FR-REST-05 (init, first-register), FR-REST-07 (Bearer), FR-AUTH-10 (roles, admin คนสุดท้าย) |
+| 1.3 | 2026-09-25 | M5: FR-REST-08 (อัปโหลด/ไฟล์), FR-CFG-07 (`routes.api`, `serverURL`), ระบุว่า drafts ใน v0.1 ไม่มี version แยก |

@@ -5,6 +5,13 @@ export default defineConfig({
   secret: process.env.EASY_CMS_SECRET ?? '',
   db: sqlite({ url: process.env.DATABASE_URL ?? 'file:./cms.db' }),
   admin: { locale: 'th' },
+  upload: {
+    // Resized copies need `sharp` installed; without it only the original is kept.
+    imageSizes: [
+      { name: 'thumbnail', width: 400, height: 300 },
+      { name: 'wide', width: 1200 },
+    ],
+  },
   collections: [
     {
       slug: 'categories',
@@ -27,6 +34,7 @@ export default defineConfig({
         { name: 'title', type: 'text', required: true, maxLength: 200 },
         { name: 'slug', type: 'slug', from: 'title' },
         { name: 'excerpt', type: 'textarea', maxLength: 300 },
+        { name: 'cover', type: 'upload' },
         { name: 'body', type: 'richText' },
         { name: 'category', type: 'relationship', to: 'categories' },
         { name: 'tags', type: 'select', options: ['nuxt', 'vue', 'cms', 'thai'], hasMany: true },

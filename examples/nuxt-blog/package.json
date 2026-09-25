@@ -15,6 +15,7 @@
     "@easy-cms/core": "workspace:^",
     "@easy-cms/db-sqlite": "workspace:^",
     "@easy-cms/nuxt": "workspace:^",
+    "@easy-cms/richtext": "workspace:^",
     "nuxt": "^4.5.2",
     "vue": "^3.5.0"
   },

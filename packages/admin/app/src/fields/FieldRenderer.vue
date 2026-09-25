@@ -6,6 +6,7 @@ import { label, t } from '../lib/i18n'
 import ArrayField from './ArrayField.vue'
 import FieldList from './FieldList.vue'
 import RelationshipField from './RelationshipField.vue'
+import UploadField from './UploadField.vue'
 
 // Tiptap is large; load it only when a rich text field is shown (NFR-PERF-03).
 const RichTextField = defineAsyncComponent(() => import('./RichTextField.vue'))
@@ -212,18 +213,14 @@ function onNumber(value: string) {
       :invalid="invalid"
       @update:model-value="set"
     />
-    <template v-else-if="field.type === 'upload'">
-      <input
-        :id="id"
-        class="input"
-        inputmode="numeric"
-        :value="modelValue ?? ''"
-        :disabled="readOnly"
-        :aria-invalid="invalid"
-        @input="set(($event.target as HTMLInputElement).value ? Number(($event.target as HTMLInputElement).value) : null)"
-      />
-      <span class="field-hint">{{ t('field.uploadSoon') }}</span>
-    </template>
+    <UploadField
+      v-else-if="field.type === 'upload'"
+      :id="id"
+      :model-value="modelValue"
+      :read-only="readOnly"
+      :invalid="invalid"
+      @update:model-value="set"
+    />
 
     <span v-if="field.type === 'slug' && field.from" class="field-hint">↳ {{ field.from }}</span>
     <p v-if="jsonError" :id="errorId" class="field-error">{{ t('field.invalidJson') }}</p>

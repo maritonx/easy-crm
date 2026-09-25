@@ -10,7 +10,7 @@ const counts = reactive<Record<string, number | null>>({})
 onMounted(() => {
   for (const c of collections) {
     counts[c.slug] = null
-    api<Paginated<unknown>>('GET', `/${c.slug}?limit=1&depth=0`)
+    api<Paginated<unknown>>('GET', `/${c.slug}?limit=1&depth=0&draft=true`)
       .then((r) => {
         counts[c.slug] = r.totalDocs
       })

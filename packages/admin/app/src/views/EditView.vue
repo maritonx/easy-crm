@@ -2,10 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import MediaThumb from '../components/MediaThumb.vue'
 import FieldList from '../fields/FieldList.vue'
 import { ApiError, api, type Doc } from '../lib/api'
 import { initialValues, snapshot, titleOf, toFormValues } from '../lib/fields'
-import { formatDate, label, singularize, t } from '../lib/i18n'
+import { formatBytes, formatDate, label, singularize, t } from '../lib/i18n'
 import { findCollection, loadSession, session, setFlash, takeFlash } from '../lib/session'
 
 const route = useRoute()
@@ -14,6 +15,8 @@ const slug = String(route.params.slug)
 const id = route.params.id === undefined ? undefined : String(route.params.id)
 const collection = findCollection(slug)
 const isUsers = slug === 'users'
+const isMedia = slug === 'media'
+const published = computed(() => doc.value?.status === 'published')
 
 const form = ref<Record<string, unknown>>(collection ? initialValues(collection.fields) : {})
 const password = ref('')
@@ -37,6 +40,8 @@ const canSave = computed(
 )
 const canDelete = computed(() => !!id && (docPermissions.value?.delete ?? false))
 const readOnly = computed(() => !canSave.value)
+// Media file metadata is shown above; only editable fields go in the form.
+const mediaFields = computed(() => collection?.fields.filter((f) => !f.readOnly) ?? [])
 const dirty = computed(() => snapshot([form.value, password.value]) !== baseline.value)
 const singular = computed(() =>
   collection ? label(collection.labels?.singular, singularize(collection.slug)) : '',
@@ -81,7 +86,7 @@ onMounted(async () => {
   }
   try {
     const [loaded, permissions] = await Promise.all([
-      api<Doc>('GET', `/${slug}/${encodeURIComponent(id)}?depth=0`),
+      api<Doc>('GET', `/${slug}/${encodeURIComponent(id)}?depth=0&draft=true`),
       api<{ update: boolean; delete: boolean }>(
         'GET',
         `/admin/access/${slug}/${encodeURIComponent(id)}`,
@@ -104,6 +109,7 @@ async function save(status?: 'draft' | 'published') {
   saving.value = true
   errors.value = {}
   message.value = null
+  const wasPublished = published.value
   const body: Record<string, unknown> = { ...form.value }
   if (status) body.status = status
   if (isUsers && password.value) body.password = password.value
@@ -113,7 +119,12 @@ async function save(status?: 'draft' | 'published') {
       : await api<Doc>('POST', `/${slug}?depth=0`, body)
     doc.value = saved
     reset(toFormValues(collection.fields, saved))
-    message.value = { kind: 'success', text: id ? t('edit.saved') : t('edit.created') }
+    const text = !id
+      ? t('edit.created')
+      : wasPublished && status === 'draft'
+        ? t('edit.unpublished')
+        : t('edit.saved')
+    message.value = { kind: 'success', text }
     // Editing yourself may change what you can do (role, name shown in the sidebar).
     if (isUsers && String(saved.id) === String(session.user?.id)) await loadSession()
     if (!id) {
@@ -187,12 +198,16 @@ onBeforeRouteLeave(() => (dirty.value && !saving.value ? window.confirm(t('edit.
           {{ t('edit.delete') }}
         </button>
         <template v-if="canSave">
-          <button v-if="collection.drafts" type="button" class="btn" :disabled="saving" @click="save('draft')">
-            {{ t('edit.saveDraft') }}
-          </button>
-          <button type="submit" class="btn btn-primary" :disabled="saving">
-            {{ collection.drafts ? t('edit.publish') : t('edit.save') }}
-          </button>
+          <!-- A published document stays published on save; unpublishing is explicit (FR-DRF-05). -->
+          <template v-if="collection.drafts && published">
+            <button type="button" class="btn" :disabled="saving" @click="save('draft')">{{ t('edit.unpublish') }}</button>
+            <button type="submit" class="btn btn-primary" :disabled="saving">{{ t('edit.save') }}</button>
+          </template>
+          <template v-else-if="collection.drafts">
+            <button type="button" class="btn" :disabled="saving" @click="save('draft')">{{ t('edit.saveDraft') }}</button>
+            <button type="submit" class="btn btn-primary" :disabled="saving">{{ t('edit.publish') }}</button>
+          </template>
+          <button v-else type="submit" class="btn btn-primary" :disabled="saving">{{ t('edit.save') }}</button>
         </template>
       </div>
     </header>
@@ -200,7 +215,16 @@ onBeforeRouteLeave(() => (dirty.value && !saving.value ? window.confirm(t('edit.
     <p v-if="readOnly" class="notice notice-warning">{{ t('edit.readOnly') }}</p>
 
     <div class="card form-body">
-      <FieldList v-model="form" :fields="collection.fields" :errors="errors" :read-only="readOnly" />
+      <template v-if="isMedia && doc">
+        <MediaThumb :media="doc" size="large" />
+        <p class="muted media-meta">
+          <a :href="String(doc.url)" target="_blank" rel="noopener">{{ doc.filename }}</a>
+          · {{ doc.mimeType }}
+          <template v-if="doc.width">· {{ t('media.size', { width: String(doc.width), height: String(doc.height), size: formatBytes(doc.filesize) }) }}</template>
+          <template v-else>· {{ formatBytes(doc.filesize) }}</template>
+        </p>
+      </template>
+      <FieldList v-model="form" :fields="isMedia ? mediaFields : collection.fields" :errors="errors" :read-only="readOnly" />
       <label v-if="isUsers && canSave" class="field">
         <span class="field-label">
           {{ id ? t('edit.newPassword') : t('edit.password') }}<span v-if="!id" class="field-required" aria-hidden="true">*</span>
@@ -276,5 +300,9 @@ onBeforeRouteLeave(() => (dirty.value && !saving.value ? window.confirm(t('edit.
 }
 .notice-warning {
   margin-bottom: 1rem;
+}
+.media-meta {
+  margin: -0.5rem 0 0;
+  font-size: 0.85rem;
 }
 </style>

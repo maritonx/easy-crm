@@ -2,7 +2,8 @@
 import Image from '@tiptap/extension-image'
 import StarterKit from '@tiptap/starter-kit'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
-import { onBeforeUnmount, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
+import MediaPicker from '../components/MediaPicker.vue'
 import { t } from '../lib/i18n'
 
 type Doc = Record<string, unknown>
@@ -66,9 +67,13 @@ function setLink() {
   if (url.trim() === '') chain?.unsetLink().run()
   else chain?.setLink({ href: url.trim() }).run()
 }
+const pickingImage = ref(false)
 function addImage() {
-  const url = window.prompt(t('rte.imagePrompt'), 'https://')?.trim()
-  if (url && url !== 'https://') editor.value?.chain().focus().setImage({ src: url }).run()
+  pickingImage.value = true
+}
+function insertImage(src: string, alt = '') {
+  pickingImage.value = false
+  editor.value?.chain().focus().setImage({ src, alt }).run()
 }
 
 type Action = { key: string; label: string; text: string; run: () => void; active?: () => boolean }
@@ -168,6 +173,14 @@ const actions = (): Action[] => {
       </button>
     </div>
     <EditorContent v-if="editor" :editor="editor" />
+    <MediaPicker
+      :open="pickingImage"
+      images-only
+      allow-url
+      @select="insertImage(String($event.url), String($event.alt ?? ''))"
+      @url="insertImage($event)"
+      @close="pickingImage = false"
+    />
   </div>
 </template>
 

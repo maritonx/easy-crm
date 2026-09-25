@@ -119,6 +119,8 @@ export interface Reference {
 
 export interface ValidateOptions {
   readonly operation: 'create' | 'update'
+  /** Drafts may be incomplete: skip `required`, but still check types (FR-DRF-02). */
+  readonly skipRequired?: boolean
   /** The whole top-level document, passed to custom `validate` functions. */
   readonly root: Data
 }
@@ -164,7 +166,7 @@ export async function validateFields(
     }
 
     if (isEmpty(raw) || (Array.isArray(raw) && raw.length === 0)) {
-      if (field.required) fail('is required')
+      if (field.required && !options.skipRequired) fail('is required')
       data[field.name] = field.type === 'array' || isHasMany(field) ? [] : null
       if (!field.required) await runCustom(field, null, options, fail)
       continue

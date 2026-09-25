@@ -23,8 +23,6 @@ import type { NuxtModule } from '@nuxt/schema'
 export interface ModuleOptions {
   /** Path to the Easy CMS config, relative to the project root. Default: `easy-cms.config.ts` (or .mts/.js/.mjs). */
   configPath?: string
-  /** Where the REST API is served. Default `/api/cms`. */
-  apiPath?: string
   /** Use `X-Forwarded-For` for the client IP (login rate limiting). Only enable behind a proxy you control. */
   trustProxy?: boolean
 }
@@ -47,7 +45,6 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     compatibility: { nuxt: '>=4.0.0' },
   },
   defaults: {
-    apiPath: DEFAULT_API_PATH,
     trustProxy: false,
   },
   async setup(options, nuxt) {
@@ -76,7 +73,9 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       logger.warn(`Could not read ${configPath} at build time: ${(error as Error).message}`)
     }
 
-    const apiPath = `/${(options.apiPath ?? DEFAULT_API_PATH).replace(/^\/+|\/+$/g, '')}`
+    // Paths come from the Easy CMS config (routes.api, admin.path), the single source of truth
+    // that media URLs are built from too.
+    const apiPath = `/${(rawConfig?.routes?.api ?? DEFAULT_API_PATH).replace(/^\/+|\/+$/g, '')}`
     const adminPath = `/${(rawConfig?.admin?.path ?? DEFAULT_ADMIN_PATH).replace(/^\/+|\/+$/g, '')}`
     // Forward slashes: Rollup accepts them on Windows too, and backslashes would need escaping.
     const slash = (path: string) => path.replace(/\\/g, '/')

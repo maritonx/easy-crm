@@ -42,5 +42,16 @@
     "nextjs",
     "vue",
     "react"
-  ]
+  ],
+  "peerDependencies": {
+    "sharp": ">=0.33.0"
+  },
+  "peerDependenciesMeta": {
+    "sharp": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "sharp": "^0.35.4"
+  }
 }

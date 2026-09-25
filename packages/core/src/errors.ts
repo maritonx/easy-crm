@@ -98,3 +98,10 @@ export class TooManyRequestsError extends EasyCMSError {
     this.name = 'TooManyRequestsError'
   }
 }
+
+export class PayloadTooLargeError extends EasyCMSError {
+  constructor(message: string) {
+    super(message, 413)
+    this.name = 'PayloadTooLargeError'
+  }
+}

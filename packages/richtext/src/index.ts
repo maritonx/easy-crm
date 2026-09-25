@@ -1,11 +1,19 @@
 /** A Tiptap / ProseMirror JSON node. */
 export interface RichTextNode {
-  type: string
-  attrs?: Record<string, unknown>
-  content?: RichTextNode[]
-  text?: string
-  marks?: { type: string; attrs?: Record<string, unknown> }[]
+  readonly type: string
+  readonly attrs?: Readonly<Record<string, unknown>>
+  readonly content?: readonly RichTextNode[]
+  readonly text?: string
+  readonly marks?: readonly {
+    readonly type: string
+    readonly attrs?: Readonly<Record<string, unknown>>
+  }[]
 }
+
+/** What rich text fields hold: `@easy-cms/core`'s `RichTextDocument` fits. */
+export type RichTextInput =
+  | RichTextNode
+  | { readonly type: string; readonly content?: readonly unknown[] }
 
 export interface RenderOptions {
   /** Override or add node renderers. Receives the node and its rendered children. */
@@ -133,15 +141,15 @@ function renderNode(node: RichTextNode, options: RenderOptions): string {
 
 /** Renders a rich text document to HTML. Text is escaped and unsafe URLs are removed. */
 export function renderRichText(
-  doc: RichTextNode | null | undefined,
+  doc: RichTextInput | null | undefined,
   options: RenderOptions = {},
 ): string {
   if (!doc) return ''
-  return renderNode(doc, options)
+  return renderNode(doc as RichTextNode, options)
 }
 
 /** Plain text of a document, e.g. for excerpts or search. Blocks are separated by newlines. */
-export function richTextToPlainText(doc: RichTextNode | null | undefined): string {
+export function richTextToPlainText(doc: RichTextInput | null | undefined): string {
   if (!doc) return ''
   const blocks = new Set(['paragraph', 'heading', 'listItem', 'blockquote', 'codeBlock'])
   const walk = (node: RichTextNode): string => {
@@ -150,7 +158,7 @@ export function richTextToPlainText(doc: RichTextNode | null | undefined): strin
     const inner = (node.content ?? []).map(walk).join('')
     return blocks.has(node.type) ? `${inner}\n` : inner
   }
-  return walk(doc)
+  return walk(doc as RichTextNode)
     .replace(/\n{2,}/g, '\n')
     .trim()
 }

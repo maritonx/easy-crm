@@ -1,9 +1,10 @@
-import { DEFAULT_ROLES, internalCollections, withUsers } from './builtins.js'
+import { DEFAULT_ROLES, internalCollections, withMedia, withUsers } from './builtins.js'
 import type { Config, ResolvedConfig } from './config.js'
 import { ConfigError } from './errors.js'
 import { validateConfig } from './validate-config.js'
 
 export const DEFAULT_ADMIN_PATH = '/admin'
+export const DEFAULT_API_PATH = '/api/cms'
 export const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024
 export const DEFAULT_TOKEN_EXPIRATION = 7 * 24 * 60 * 60
 
@@ -23,7 +24,7 @@ export async function resolveConfig(input: Config | ResolvedConfig): Promise<Res
     config = await plugin(config)
   }
   if (typeof config === 'object' && config !== null && Array.isArray(config.collections ?? [])) {
-    config = withUsers(config)
+    config = withMedia(withUsers(config))
   }
 
   const issues = validateConfig(config)
@@ -32,6 +33,7 @@ export async function resolveConfig(input: Config | ResolvedConfig): Promise<Res
   const { plugins: _plugins, ...rest } = config
   const result: ResolvedConfig = {
     ...rest,
+    routes: { api: `/${(config.routes?.api ?? DEFAULT_API_PATH).replace(/^\/+|\/+$/g, '')}` },
     admin: {
       path: config.admin?.path ?? DEFAULT_ADMIN_PATH,
       locale: config.admin?.locale ?? 'en',
@@ -40,6 +42,8 @@ export async function resolveConfig(input: Config | ResolvedConfig): Promise<Res
       dir: config.upload?.dir ?? 'uploads',
       maxFileSize: config.upload?.maxFileSize ?? DEFAULT_MAX_FILE_SIZE,
       mimeTypes: config.upload?.mimeTypes ?? ['image/*', 'application/pdf'],
+      imageSizes: config.upload?.imageSizes ?? [],
+      ...(config.upload?.storage ? { storage: config.upload.storage } : {}),
     },
     auth: {
       roles: config.auth?.roles ?? DEFAULT_ROLES,

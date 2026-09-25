@@ -10,6 +10,7 @@ describe('resolveConfig', () => {
       dir: 'uploads',
       maxFileSize: 10 * 1024 * 1024,
       mimeTypes: ['image/*', 'application/pdf'],
+      imageSizes: [],
     })
     expect(config.auth).toEqual({
       roles: ['admin', 'editor'],
@@ -18,7 +19,13 @@ describe('resolveConfig', () => {
       lockWindow: 15 * 60,
       trustedOrigins: [],
     })
-    expect(config.collections.map((c) => c.slug)).toEqual(['users', 'sessions', 'login-attempts'])
+    expect(config.collections.map((c) => c.slug)).toEqual([
+      'users',
+      'media',
+      'sessions',
+      'login-attempts',
+    ])
+    expect(config.routes).toEqual({ api: '/api/cms' })
     expect(config.globals).toEqual([])
     expect(config).not.toHaveProperty('plugins')
   })

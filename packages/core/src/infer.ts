@@ -32,6 +32,13 @@ export interface BuiltinUsersCollection {
 type AllCollections<C extends Config> =
   | NonNullable<C['collections']>[number]
   | BuiltinUsersCollection
+  | BuiltinMediaCollection
+
+/** The built-in media collection; its documents are typed as `MediaDocument`. */
+export interface BuiltinMediaCollection {
+  readonly slug: 'media'
+  readonly fields: readonly []
+}
 
 type CollectionBySlug<C extends Config, S> = Extract<AllCollections<C>, { readonly slug: S }>
 
@@ -40,17 +47,31 @@ type RelationValue<C extends Config, S> = [CollectionBySlug<C, S>] extends [neve
   ? ID | Record<string, unknown>
   : ID | CollectionDocument<C, S & string>
 
+export interface MediaSize {
+  filename: string
+  width: number
+  height: number
+  filesize: number
+  url: string
+}
+
+/** A document of the built-in `media` collection, as returned by the API. */
 export interface MediaDocument {
   id: ID
   filename: string
+  originalName?: string | null
   mimeType: string
   filesize: number
   width?: number | null
   height?: number | null
   alt?: string | null
+  /** Public URL of the file. */
   url: string
+  /** Resized copies, when `upload.imageSizes` is set and sharp is installed. */
+  sizes: Record<string, MediaSize>
   createdAt: string
   updatedAt: string
+  [field: string]: unknown
 }
 
 export type FieldValue<F extends Field, C extends Config = Config> = F extends {
@@ -117,13 +138,13 @@ export type InferGlobal<T extends GlobalConfig, C extends Config = Config> = Sim
 export type CollectionSlug<C extends Config> =
   | NonNullable<C['collections']>[number]['slug']
   | 'users'
+  | 'media'
 export type GlobalSlug<C extends Config> = NonNullable<C['globals']>[number]['slug']
 
 /** Document type of a collection, e.g. `CollectionDocument<typeof config, 'posts'>`. */
-export type CollectionDocument<C extends Config, S extends CollectionSlug<C>> = InferCollection<
-  CollectionBySlug<C, S>,
-  C
->
+export type CollectionDocument<C extends Config, S extends CollectionSlug<C>> = S extends 'media'
+  ? MediaDocument
+  : InferCollection<CollectionBySlug<C, S>, C>
 
 /** Data type of a global, e.g. `GlobalDocument<typeof config, 'site'>`. */
 export type GlobalDocument<C extends Config, S extends GlobalSlug<C>> = InferGlobal<

@@ -38,6 +38,7 @@ describe('development push (FR-DAT-02)', () => {
     expect(await tables(cms.cwd)).toEqual([
       'ecms_globals',
       'ecms_login_attempts',
+      'ecms_media',
       'ecms_migrations',
       'ecms_posts',
       'ecms_posts__rows',
@@ -106,6 +107,7 @@ describe('development push (FR-DAT-02)', () => {
     expect(await tables(cwd)).toEqual([
       'ecms_globals',
       'ecms_login_attempts',
+      'ecms_media',
       'ecms_migrations',
       'ecms_posts',
       'ecms_sessions',
@@ -127,6 +129,7 @@ describe('development push (FR-DAT-02)', () => {
     expect(await tables(cms.cwd)).toEqual([
       'cms_globals',
       'cms_login_attempts',
+      'cms_media',
       'cms_migrations',
       'cms_posts',
       'cms_sessions',

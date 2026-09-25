@@ -33,7 +33,7 @@ function reset(data: Data) {
 onMounted(async () => {
   if (!global) return
   try {
-    reset(await api<Data>('GET', `/globals/${slug}?depth=0`))
+    reset(await api<Data>('GET', `/globals/${slug}?depth=0&draft=true`))
   } catch (e) {
     message.value = { kind: 'error', text: t('common.error', { message: (e as Error).message }) }
   } finally {

@@ -39,7 +39,7 @@ beforeAll(async () => {
 })
 
 const titles = async (where: Where, sort: string | string[] = 'title') =>
-  (await cms.find('posts', { where, sort, limit: 0 })).docs.map((d) => d.title)
+  (await cms.find('posts', { draft: true, where, sort, limit: 0 })).docs.map((d) => d.title)
 
 describe('where operators (FR-LAPI-02)', () => {
   it('equals / not_equals, including null', async () => {
@@ -123,7 +123,10 @@ describe('nested paths', () => {
       { title: 'x' as never },
     ]
     for (const where of bad) {
-      await expect(cms.find('posts', { where }), JSON.stringify(where)).rejects.toThrow(QueryError)
+      await expect(
+        cms.find('posts', { draft: true, where }),
+        JSON.stringify(where),
+      ).rejects.toThrow(QueryError)
     }
   })
 })
@@ -131,15 +134,17 @@ describe('nested paths', () => {
 describe('sort and pagination', () => {
   it('sorts ascending and descending, newest first by default', async () => {
     expect(
-      (await cms.find('posts', { sort: '-views', limit: 2 })).docs.map((d) => d.title),
+      (await cms.find('posts', { draft: true, sort: '-views', limit: 2 })).docs.map((d) => d.title),
     ).toEqual(['Gamma 100%', 'Beta'])
-    expect((await cms.find('posts', { limit: 1 })).docs[0]?.title).toBe('delta')
-    expect((await cms.find('posts', { sort: 'seo.title', limit: 0 })).docs).toHaveLength(4)
-    await expect(cms.find('posts', { sort: 'links' })).rejects.toThrow(QueryError)
+    expect((await cms.find('posts', { draft: true, limit: 1 })).docs[0]?.title).toBe('delta')
+    expect(
+      (await cms.find('posts', { draft: true, sort: 'seo.title', limit: 0 })).docs,
+    ).toHaveLength(4)
+    await expect(cms.find('posts', { draft: true, sort: 'links' })).rejects.toThrow(QueryError)
   })
 
   it('paginates', async () => {
-    const page2 = await cms.find('posts', { sort: 'title', limit: 3, page: 2 })
+    const page2 = await cms.find('posts', { draft: true, sort: 'title', limit: 3, page: 2 })
     expect(page2).toMatchObject({
       totalDocs: 4,
       limit: 3,
@@ -150,13 +155,13 @@ describe('sort and pagination', () => {
     })
     expect(page2.docs.map((d) => d.title)).toEqual(['delta'])
 
-    const all = await cms.find('posts', { limit: 0 })
+    const all = await cms.find('posts', { draft: true, limit: 0 })
     expect(all).toMatchObject({ totalDocs: 4, totalPages: 1, hasNextPage: false })
-    expect(await cms.count('posts', { where: { views: { gt: 15 } } })).toBe(2)
+    expect(await cms.count('posts', { where: { views: { gt: 15 } }, draft: true })).toBe(2)
   })
 
   it('validates limit and page', async () => {
-    await expect(cms.find('posts', { limit: -1 })).rejects.toThrow(QueryError)
+    await expect(cms.find('posts', { draft: true, limit: -1 })).rejects.toThrow(QueryError)
     await expect(cms.find('posts', { page: 0 })).rejects.toThrow(QueryError)
   })
 })

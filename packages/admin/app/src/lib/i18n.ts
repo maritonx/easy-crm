@@ -44,6 +44,21 @@ const en = {
   'edit.publish': 'Publish',
   'edit.delete': 'Delete',
   'edit.confirmDelete': 'Delete this document? This cannot be undone.',
+  'edit.unpublish': 'Unpublish',
+  'edit.unpublished': 'Unpublished',
+  'media.upload': 'Upload files',
+  'media.drop': 'Drop files here or choose files to upload',
+  'media.uploading': 'Uploading {name}…',
+  'media.uploaded': 'Uploaded {count} file(s)',
+  'media.failed': '{name}: {message}',
+  'media.choose': 'Choose from media library',
+  'media.change': 'Change',
+  'media.remove': 'Remove',
+  'media.pickerTitle': 'Choose a file',
+  'media.empty': 'No files yet. Upload one.',
+  'media.preview': 'Preview',
+  'media.size': '{width} × {height} px · {size}',
+  'rte.imageFromUrl': 'Or insert by URL',
   'edit.saved': 'Saved',
   'edit.created': 'Created',
   'edit.deleted': 'Deleted',
@@ -66,7 +81,6 @@ const en = {
   'field.searchRelation': 'Search…',
   'field.remove': 'Remove {title}',
   'field.noMatches': 'No matches',
-  'field.uploadSoon': 'Enter a media id (uploads arrive with the media library).',
   'rte.bold': 'Bold',
   'rte.italic': 'Italic',
   'rte.underline': 'Underline',
@@ -137,6 +151,21 @@ const th: Record<MessageKey, string> = {
   'edit.publish': 'เผยแพร่',
   'edit.delete': 'ลบ',
   'edit.confirmDelete': 'ลบรายการนี้? การลบไม่สามารถย้อนกลับได้',
+  'edit.unpublish': 'ยกเลิกการเผยแพร่',
+  'edit.unpublished': 'ยกเลิกการเผยแพร่แล้ว',
+  'media.upload': 'อัปโหลดไฟล์',
+  'media.drop': 'ลากไฟล์มาวางที่นี่ หรือเลือกไฟล์เพื่ออัปโหลด',
+  'media.uploading': 'กำลังอัปโหลด {name}…',
+  'media.uploaded': 'อัปโหลดแล้ว {count} ไฟล์',
+  'media.failed': '{name}: {message}',
+  'media.choose': 'เลือกจากคลังสื่อ',
+  'media.change': 'เปลี่ยน',
+  'media.remove': 'นำออก',
+  'media.pickerTitle': 'เลือกไฟล์',
+  'media.empty': 'ยังไม่มีไฟล์ อัปโหลดไฟล์แรกได้เลย',
+  'media.preview': 'ตัวอย่าง',
+  'media.size': '{width} × {height} px · {size}',
+  'rte.imageFromUrl': 'หรือใส่ URL ของรูป',
   'edit.saved': 'บันทึกแล้ว',
   'edit.created': 'สร้างแล้ว',
   'edit.deleted': 'ลบแล้ว',
@@ -159,7 +188,6 @@ const th: Record<MessageKey, string> = {
   'field.searchRelation': 'ค้นหา…',
   'field.remove': 'นำ {title} ออก',
   'field.noMatches': 'ไม่พบรายการ',
-  'field.uploadSoon': 'ใส่ id ของไฟล์ (การอัปโหลดจะมาพร้อมคลังสื่อ)',
   'rte.bold': 'ตัวหนา',
   'rte.italic': 'ตัวเอียง',
   'rte.underline': 'ขีดเส้นใต้',
@@ -254,4 +282,17 @@ export function singularize(word: string): string {
   if (/(ss|us)$/i.test(word)) return word
   if (/(x|ch|sh|sses)es$/i.test(word)) return word.replace(/es$/i, '')
   return word.replace(/s$/i, '')
+}
+
+/** "1.2 MB" style sizes. */
+export function formatBytes(bytes: unknown): string {
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes)) return ''
+  const units = ['B', 'KB', 'MB', 'GB']
+  let value = bytes
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit++
+  }
+  return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`
 }

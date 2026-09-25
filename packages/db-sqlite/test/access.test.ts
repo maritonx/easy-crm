@@ -101,7 +101,7 @@ beforeAll(async () => {
 
 describe('Local API skips access by default (FR-LAPI-06)', () => {
   it('returns everything without a user', async () => {
-    expect((await cms.find('posts')).totalDocs).toBe(2)
+    expect((await cms.find('posts', { draft: true })).totalDocs).toBe(2)
     expect(await cms.findById('secrets', 1)).toMatchObject({ code: 'hunter2' })
   })
 })
@@ -116,7 +116,7 @@ describe('collection access (FR-ACL-01..03)', () => {
     expect((await cms.find('posts', as(null))).docs.map((d) => d.title)).toEqual(['Mine'])
     expect(await cms.count('posts', as(null))).toBe(1)
     expect(await cms.findById('posts', adminDraft, as(null))).toBeNull()
-    expect((await cms.find('posts', as(editor))).totalDocs).toBe(2)
+    expect((await cms.find('posts', { ...as(editor), draft: true })).totalDocs).toBe(2)
   })
 
   it('checks document-level update access', async () => {

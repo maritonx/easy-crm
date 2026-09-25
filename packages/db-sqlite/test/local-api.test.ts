@@ -21,7 +21,7 @@ describe('create / findById', () => {
       seo: { title: 'SEO', noIndex: true },
     })
 
-    const found = await cms.findById('posts', post.id, { depth: 0 })
+    const found = await cms.findById('posts', post.id, { depth: 0, draft: true })
     expect(found).toMatchObject({
       id: post.id,
       title: 'Hello World',
@@ -187,9 +187,9 @@ describe('update', () => {
     await cms.destroy()
   })
 
-  it('validates the merged document (required fields cannot be cleared)', async () => {
+  it('validates the merged document (required fields cannot be cleared when published)', async () => {
     const cms = await open(blog)
-    const post = await cms.create('posts', { title: 'T' })
+    const post = await cms.create('posts', { title: 'T', status: 'published' })
     await expect(cms.update('posts', post.id, { title: null as never })).rejects.toMatchObject({
       errors: [{ field: 'title', message: 'is required' }],
     })
@@ -247,18 +247,18 @@ describe('populate (FR-LAPI-04)', () => {
     await cms.update('authors', author.id, { favorite: post.id })
     const other = await cms.create('posts', { title: 'Q', related: [post.id], author: author.id })
 
-    const depth0 = await cms.findById('posts', other.id, { depth: 0 })
+    const depth0 = await cms.findById('posts', other.id, { depth: 0, draft: true })
     expect(depth0?.author).toBe(author.id)
     expect(depth0?.related).toEqual([post.id])
 
-    const depth1 = await cms.findById('posts', other.id)
+    const depth1 = await cms.findById('posts', other.id, { draft: true })
     expect(depth1?.author).toMatchObject({ id: author.id, name: 'Ann', favorite: post.id })
     expect(depth1?.related).toMatchObject([{ id: post.id, title: 'P', author: author.id }])
 
-    const depth2 = await cms.findById('posts', other.id, { depth: 2 })
+    const depth2 = await cms.findById('posts', other.id, { depth: 2, draft: true })
     expect(depth2?.author).toMatchObject({ favorite: { id: post.id, title: 'P' } })
 
-    const deep = await cms.findById('posts', other.id, { depth: 99 })
+    const deep = await cms.findById('posts', other.id, { depth: 99, draft: true })
     // capped at 3: other → author → favorite → author (id)
     expect(deep?.author).toMatchObject({
       favorite: { author: { id: author.id, favorite: post.id } },
@@ -272,8 +272,8 @@ describe('populate (FR-LAPI-04)', () => {
     const b = await cms.create('posts', { title: 'B', related: [a.id] })
     const author = await cms.create('authors', { name: 'X', favorite: a.id })
     await cms.delete('posts', a.id)
-    expect((await cms.findById('posts', b.id))?.related).toEqual([])
-    expect((await cms.findById('authors', author.id))?.favorite).toBeNull()
+    expect((await cms.findById('posts', b.id, { draft: true }))?.related).toEqual([])
+    expect((await cms.findById('authors', author.id, { draft: true }))?.favorite).toBeNull()
     await cms.destroy()
   })
 })

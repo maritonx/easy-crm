@@ -12,7 +12,6 @@ export default defineNuxtConfig({
   modules: ['@easy-cms/nuxt'],
   easyCms: {
     // configPath: 'easy-cms.config.ts',
-    // apiPath: '/api/cms',
     // trustProxy: false, // use X-Forwarded-For for login rate limiting
   },
 })
@@ -20,7 +19,8 @@ export default defineNuxtConfig({
 
 With `easy-cms.config.ts` in the project root you get:
 
-- **REST API** at `/api/cms` (collections, globals, login/logout/me).
+- **REST API** at `/api/cms` (collections, globals, uploads, login/logout/me); change it with `routes.api` in the Easy CMS config.
+- **Admin UI** at `/admin` (`admin.path` in the config).
 - **Local API** in server routes, typed from your config:
 
   ```ts

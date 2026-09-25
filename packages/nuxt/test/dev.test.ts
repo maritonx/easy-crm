@@ -42,7 +42,10 @@ describe('@easy-cms/nuxt in dev (FR-ADP-01)', () => {
     })
     expect(await $fetch('/api/whoami')).toEqual({ email: null })
 
-    const all = await $fetch<{ totalDocs: number }>('/api/cms/posts', { headers: { cookie } })
+    // Logged-in users see drafts when they ask for them.
+    const published = await $fetch<{ totalDocs: number }>('/api/cms/posts', { headers: { cookie } })
+    expect(published.totalDocs).toBe(1)
+    const all = await $fetch<{ totalDocs: number }>('/api/cms/posts?draft=true', { headers: { cookie } })
     expect(all.totalDocs).toBe(2)
 
     // Writes with the cookie need the CSRF token.
