@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -89,10 +90,12 @@ const again: Collections['posts'] = post
 export { again }
 `,
     )
-    const tsc = join(import.meta.dirname, '../../../node_modules/.bin/tsc')
+    // Run TypeScript through node: node_modules/.bin/tsc is a .cmd shim on Windows.
+    const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc')
     execFileSync(
-      tsc,
+      process.execPath,
       [
+        tsc,
         '--ignoreConfig',
         '--noEmit',
         '--strict',
@@ -102,9 +105,7 @@ export { again }
         'nodenext',
         join(dir, 'use.ts'),
       ],
-      {
-        stdio: 'pipe',
-      },
+      { stdio: 'pipe' },
     )
   })
 })
