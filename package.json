@@ -14,7 +14,8 @@
     "format": "biome check --write .",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build && changeset publish"
+    "release": "turbo run build && changeset publish",
+    "test:e2e": "pnpm --filter easy-cms-e2e test:e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

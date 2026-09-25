@@ -70,6 +70,12 @@ export {
   DEFAULT_TOKEN_EXPIRATION,
   resolveConfig,
 } from './resolve-config.js'
+export type {
+  AdminCollection,
+  AdminField,
+  AdminGlobal,
+  AdminSchema,
+} from './rest/admin-schema.js'
 export {
   CSRF_COOKIE,
   CSRF_HEADER,

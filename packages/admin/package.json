@@ -1,0 +1,55 @@
+{
+  "name": "@easy-cms/admin",
+  "version": "0.0.0",
+  "description": "Prebuilt admin UI for Easy CMS",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "vite build && tsup",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit && vue-tsc --noEmit -p app/tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@easy-cms/core": "workspace:^",
+    "@tiptap/extension-image": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
+    "@tiptap/vue-3": "^3.31.3",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/test-utils": "^2.5.1",
+    "happy-dom": "^20.14.5",
+    "vite": "^8.3.1",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1",
+    "vue-tsc": "^3.3.11"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "directory": "packages/admin"
+  },
+  "keywords": [
+    "easy-cms",
+    "admin",
+    "cms",
+    "vue"
+  ]
+}

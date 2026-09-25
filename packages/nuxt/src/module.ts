@@ -1,6 +1,14 @@
-import { existsSync } from 'node:fs'
-import { isAbsolute, join, relative, resolve } from 'node:path'
-import { CONFIG_FILE_NAMES, DEFAULT_API_PATH, importConfig } from '@easy-cms/core'
+import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { renderShell, SECURITY_HEADERS, SHELL_FILE } from '@easy-cms/admin'
+import {
+  CONFIG_FILE_NAMES,
+  type Config,
+  DEFAULT_ADMIN_PATH,
+  DEFAULT_API_PATH,
+  importConfig,
+} from '@easy-cms/core'
 import {
   addServerHandler,
   addServerImports,
@@ -25,10 +33,12 @@ export interface ModuleOptions {
 interface NitroOptions {
   virtual?: Record<string, string | (() => string)>
   externals?: { inline?: string[]; traceInclude?: string[] }
+  publicAssets?: { dir: string; baseURL?: string; maxAge?: number; fallthrough?: boolean }[]
 }
 
 const SERVER = '#easy-cms-local-api'
 const HANDLER = '#easy-cms-rest-handler'
+const ADMIN_SHELL = '#easy-cms-admin-shell'
 
 const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   meta: {
@@ -57,7 +67,17 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       return
     }
 
+    // The raw config (not validated: env vars may be missing at build time) provides
+    // admin settings and bundling hints.
+    let rawConfig: Config | undefined
+    try {
+      rawConfig = await importConfig(configPath)
+    } catch (error) {
+      logger.warn(`Could not read ${configPath} at build time: ${(error as Error).message}`)
+    }
+
     const apiPath = `/${(options.apiPath ?? DEFAULT_API_PATH).replace(/^\/+|\/+$/g, '')}`
+    const adminPath = `/${(rawConfig?.admin?.path ?? DEFAULT_ADMIN_PATH).replace(/^\/+|\/+$/g, '')}`
     // Forward slashes: Rollup accepts them on Windows too, and backslashes would need escaping.
     const slash = (path: string) => path.replace(/\\/g, '/')
     const runtime = (file: string) => JSON.stringify(slash(resolveRuntime(`./runtime/${file}`)))
@@ -66,8 +86,8 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // Virtual modules are always bundled by Nitro, so the user's TypeScript config is compiled
     // with the server in both dev and production.
-    nitro.virtual = {
-      ...nitro.virtual,
+    nitro.virtual ??= {}
+    Object.assign(nitro.virtual, {
       [SERVER]: `import config from ${config}
 import { getEasyCMS, getEasyCMSUser } from ${runtime('cms.js')}
 export function useEasyCMS() { return getEasyCMS(config) }
@@ -77,7 +97,7 @@ export function useEasyCMSUser(event) { return getEasyCMSUser(config, event) }
 import { createHandler } from ${runtime('handler.js')}
 export default createHandler(config, ${JSON.stringify({ basePath: apiPath, trustProxy: options.trustProxy ?? false })})
 `,
-    }
+    })
 
     // Types for the virtual module; the config is imported as a type so its literal
     // collection types flow into useEasyCMS().
@@ -121,14 +141,31 @@ declare module '${SERVER}' {
       inline: [...(nitro.externals?.inline ?? []), runtimeDir],
     }
 
+    // Admin UI: assets as Nitro public assets (CDN-friendly), the HTML shell from a handler
+    // that adds security headers and the settings the app reads at startup.
+    const adminPackage = createRequire(import.meta.url).resolve('@easy-cms/admin/package.json')
+    const adminAppDir = join(dirname(adminPackage), 'dist/app')
+    const shell = renderShell(readFileSync(join(adminAppDir, SHELL_FILE), 'utf8'), {
+      basePath: adminPath,
+      apiPath,
+      locale: rawConfig?.admin?.locale ?? 'en',
+    })
+    nitro.virtual[ADMIN_SHELL] = `export const basePath = ${JSON.stringify(adminPath)}
+export const html = ${JSON.stringify(shell)}
+export const headers = ${JSON.stringify(SECURITY_HEADERS)}
+`
+    nitro.publicAssets = [
+      ...(nitro.publicAssets ?? []),
+      // fallthrough: app routes (not files) continue to the shell handler below.
+      { dir: adminAppDir, baseURL: adminPath, maxAge: 60 * 60 * 24 * 365, fallthrough: true },
+    ]
+    const adminHandler = resolveRuntime('./runtime/admin.js')
+    addServerHandler({ route: adminPath, handler: adminHandler })
+    addServerHandler({ route: `${adminPath}/**`, handler: adminHandler })
+
     // Ship files the database adapter loads dynamically (e.g. libsql's native binary),
     // which Nitro's output tracing cannot find on its own.
-    let traceInclude: readonly string[] = []
-    try {
-      traceInclude = (await importConfig(configPath))?.db?.bundle?.traceInclude ?? []
-    } catch (error) {
-      logger.warn(`Could not read ${configPath} at build time: ${(error as Error).message}`)
-    }
+    const traceInclude = rawConfig?.db?.bundle?.traceInclude ?? []
     if (traceInclude.length > 0) {
       const externals = nitro.externals ?? {}
       nitro.externals = {
@@ -141,7 +178,7 @@ declare module '${SERVER}' {
     nuxt.options.ignore.push('**/*.db', '**/*.db-*', 'easy-cms/migrations/**')
     nuxt.options.watch.push(configPath)
 
-    logger.info(`Easy CMS API at ${apiPath}`)
+    logger.info(`Easy CMS admin at ${adminPath}, API at ${apiPath}`)
   },
 })
 

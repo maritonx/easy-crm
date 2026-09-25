@@ -14,11 +14,16 @@ export default defineConfig([
   },
   {
     // Runtime files are loaded by Nuxt/Nitro, which resolve `#imports` and `#easy-cms/config`.
-    entry: ['src/runtime/cms.ts', 'src/runtime/handler.ts', 'src/runtime/plugin.ts'],
+    entry: [
+      'src/runtime/admin.ts',
+      'src/runtime/cms.ts',
+      'src/runtime/handler.ts',
+      'src/runtime/plugin.ts',
+    ],
     outDir: 'dist/runtime',
     format: ['esm'],
     bundle: false,
-    external: ['#easy-cms-local-api'],
+    external: ['#easy-cms-local-api', '#easy-cms-admin-shell'],
     dts,
     target: 'node22',
   },

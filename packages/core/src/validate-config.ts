@@ -8,7 +8,14 @@ export const MIN_SECRET_LENGTH = 32
 export const BUILTIN_COLLECTIONS = ['users', 'media'] as const
 
 /** Slugs that would clash with Easy CMS's own tables or routes. */
-const RESERVED_SLUGS = new Set(['globals', 'sessions', 'login-attempts', 'migrations', 'access'])
+const RESERVED_SLUGS = new Set([
+  'admin',
+  'globals',
+  'sessions',
+  'login-attempts',
+  'migrations',
+  'access',
+])
 
 const SYSTEM_FIELD_NAMES = new Set(['id', 'createdAt', 'updatedAt'])
 

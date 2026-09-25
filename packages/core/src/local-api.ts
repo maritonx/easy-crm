@@ -321,6 +321,30 @@ export class EasyCMS<C extends Config = Config> {
     return this.findGlobal(slug, options)
   }
 
+  /**
+   * What `user` may do with one document. Resolves `where`-style access
+   * against the document, so the admin UI can hide actions precisely.
+   */
+  async documentPermissions(
+    collection: Slug<C>,
+    id: ID,
+    user: AuthUser | null,
+  ): Promise<{ update: boolean; delete: boolean }> {
+    const config = this.collection(collection)
+    const parsed = parseId(id)
+    if (parsed === undefined) return { update: false, delete: false }
+    const guard: Guard = { enforce: true, user }
+    const check = (operation: 'update' | 'delete') =>
+      this.checkDocumentAccess(config, operation, guard, parsed, undefined).then(
+        () => true,
+        (error: unknown) => {
+          if (error instanceof ForbiddenError || error instanceof UnauthorizedError) return false
+          throw error
+        },
+      )
+    return { update: await check('update'), delete: await check('delete') }
+  }
+
   /** Closes the database connection. */
   async destroy(): Promise<void> {
     await this.db.destroy()

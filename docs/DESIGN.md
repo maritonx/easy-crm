@@ -255,3 +255,4 @@ easy-cms serve               # standalone (v0.2)
 - [ADR-0004](adr/0004-code-first-content-model.md) — Content model แบบ code-first
 - [ADR-0005](adr/0005-storage-layout.md) — รูปแบบการเก็บข้อมูลและ migration
 - [ADR-0006](adr/0006-nuxt-adapter.md) — โครงสร้างของ Nuxt adapter
+- [ADR-0007](adr/0007-admin-ui.md) — โครงสร้างของหน้า Admin

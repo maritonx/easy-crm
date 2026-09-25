@@ -413,3 +413,47 @@ describe('unexpected errors (FR-REST-06)', () => {
     }
   })
 })
+
+describe('admin endpoints', () => {
+  it('returns the schema with permissions for the current user, without hidden fields', async () => {
+    expect((await call('/admin/schema')).status).toBe(401)
+    const editor = await browser('editor@x.co')
+    const { json } = await call('/admin/schema', { headers: editor.headers })
+    const slugs = json.collections.map((c: { slug: string }) => c.slug)
+    expect(slugs).toEqual(['users', 'posts', 'pages'])
+    const users = json.collections[0]
+    expect(users.permissions).toEqual({ read: true, create: false, update: true, delete: false })
+    expect(users.fields.map((f: { name: string }) => f.name)).toEqual([
+      'email',
+      'name',
+      'role',
+      'active',
+    ])
+    expect(users.fields.find((f: { name: string }) => f.name === 'role')).toMatchObject({
+      readOnly: true,
+      options: [
+        { label: 'admin', value: 'admin' },
+        { label: 'editor', value: 'editor' },
+      ],
+    })
+    expect(json.globals[0]).toMatchObject({ slug: 'site', permissions: { read: true } })
+    expect(JSON.stringify(json)).not.toContain('passwordHash')
+  })
+
+  it('resolves document-level permissions', async () => {
+    const editor = await browser('editor@x.co')
+    const self = editor.login.json.user.id
+    const admin = (await cms.find('users', { where: { email: { equals: 'admin@x.co' } } })).docs[0]
+      ?.id
+    expect((await call(`/admin/access/users/${self}`, { headers: editor.headers })).json).toEqual({
+      update: true,
+      delete: false,
+    })
+    expect((await call(`/admin/access/users/${admin}`, { headers: editor.headers })).json).toEqual({
+      update: false,
+      delete: false,
+    })
+    expect((await call('/admin/access/sessions/1', { headers: editor.headers })).status).toBe(404)
+    expect((await call('/admin/nope', { headers: editor.headers })).status).toBe(404)
+  })
+})

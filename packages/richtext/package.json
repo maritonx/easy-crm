@@ -1,0 +1,38 @@
+{
+  "name": "@easy-cms/richtext",
+  "version": "0.0.0",
+  "description": "Render Easy CMS rich text (Tiptap JSON) to safe HTML",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "directory": "packages/richtext"
+  },
+  "keywords": [
+    "easy-cms",
+    "rich-text",
+    "tiptap",
+    "html"
+  ]
+}

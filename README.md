@@ -2,7 +2,7 @@
 
 Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
 
-> ⚠️ Early development (milestone M3). See [docs/DESIGN.md](docs/DESIGN.md) and [docs/SRS.md](docs/SRS.md).
+> ⚠️ Early development (milestone M4). See [docs/DESIGN.md](docs/DESIGN.md) and [docs/SRS.md](docs/SRS.md).
 
 ## Packages
 
@@ -10,6 +10,8 @@ Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
 |---|---|
 | [`@easy-cms/core`](packages/core) | config, validation, type inference, Local API, auth, access control, REST handler |
 | [`@easy-cms/db-sqlite`](packages/db-sqlite) | SQLite / libSQL adapter, migrations |
+| [`@easy-cms/admin`](packages/admin) | Admin UI (Vue 3 SPA) served at `/admin` |
+| [`@easy-cms/richtext`](packages/richtext) | `renderRichText()`: Tiptap JSON → safe HTML |
 | [`@easy-cms/nuxt`](packages/nuxt) | Nuxt 4 module: REST API + typed `useEasyCMS()` |
 | [`easy-cms`](packages/cli) | CLI: `migrate`, `migrate:create`, `migrate:status` |
 
@@ -27,6 +29,12 @@ pnpm build
 pnpm typecheck
 pnpm test
 pnpm lint
+```
+
+End-to-end tests (Playwright, uses your installed Chrome locally):
+
+```bash
+pnpm test:e2e
 ```
 
 Add a changeset for user-facing changes with `pnpm changeset`.

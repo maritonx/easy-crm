@@ -37,4 +37,22 @@ describe('@easy-cms/nuxt production build', () => {
     expect(rest.status).toBe(200)
     expect(((await rest.json()) as { docs: { title: string }[] }).docs[0]?.title).toBe('Built')
   })
+
+  it('serves the admin UI with security headers, and its assets', async () => {
+    const shell = await fetch('/admin/collections/posts')
+    expect(shell.status).toBe(200)
+    expect(shell.headers.get('content-security-policy')).toContain("frame-ancestors 'none'")
+    const html = await shell.text()
+    expect(html).toContain('<base href="/admin/">')
+    const script = /src="\.\/(assets\/[^"]+\.js)"/.exec(html)?.[1]
+    expect(script).toBeDefined()
+    const asset = await fetch(`/admin/${script}`)
+    expect(asset.status).toBe(200)
+    expect(asset.headers.get('content-type')).toContain('javascript')
+    expect((await fetch('/admin/assets/missing.js')).status).toBe(404)
+    // The bare path redirects to the trailing slash (Nitro's static handler may answer first with 301).
+    const redirect = await fetch('/admin', { redirect: 'manual' })
+    expect([301, 308]).toContain(redirect.status)
+    expect(redirect.headers.get('location')).toMatch(/\/admin\/$/)
+  })
 })

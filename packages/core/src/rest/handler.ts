@@ -10,6 +10,7 @@ import {
   ValidationError,
 } from '../errors.js'
 import type { EasyCMS } from '../local-api.js'
+import { adminSchema } from './admin-schema.js'
 import { parseDepth, parseListQuery } from './query.js'
 
 export const SESSION_COOKIE = 'ecms-session'
@@ -135,6 +136,26 @@ async function route(
           body: { user: session.user, exp: session.expiresAt, csrfToken: session.csrfToken },
         }
       }
+    }
+    throw new HttpError('Not found', 404)
+  }
+
+  // Admin UI metadata
+  if (first === 'admin') {
+    if (method !== 'GET') throw methodNotAllowed(ctx, 'GET')
+    if (!ctx.user) throw new UnauthorizedError()
+    if (second === 'schema' && third === undefined)
+      return { body: await adminSchema(cms, ctx.user) }
+    // /admin/access/:collection/:id → what the user may do with that document
+    const [, , collection, id, extra] = segments
+    if (second === 'access' && collection && id && extra === undefined) {
+      if (
+        INTERNAL_COLLECTIONS.has(collection) ||
+        !cms.config.collections.some((c) => c.slug === collection)
+      ) {
+        throw new HttpError(`Unknown collection "${collection}"`, 404)
+      }
+      return { body: await cms.documentPermissions(collection, id, ctx.user) }
     }
     throw new HttpError('Not found', 404)
   }
