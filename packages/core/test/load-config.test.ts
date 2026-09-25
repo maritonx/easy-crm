@@ -10,8 +10,13 @@ describe('loadConfig (FR-CFG-01)', () => {
   it('loads a TypeScript config that uses defineConfig', async () => {
     const config = await loadConfig({ cwd: fixture('ts') })
     expect(config.admin.locale).toBe('th')
-    expect(config.collections.map((c) => c.slug)).toEqual(['posts'])
-    expect(typeof config.collections[0]?.access?.update).toBe('function')
+    expect(config.collections.map((c) => c.slug)).toEqual([
+      'users',
+      'posts',
+      'sessions',
+      'login-attempts',
+    ])
+    expect(typeof config.collections[1]?.access?.update).toBe('function')
   })
 
   it('finds the config file', () => {
@@ -21,7 +26,7 @@ describe('loadConfig (FR-CFG-01)', () => {
 
   it('accepts an explicit file', async () => {
     const config = await loadConfig({ cwd: fixture('.'), configFile: 'ts/easy-cms.config.ts' })
-    expect(config.collections).toHaveLength(1)
+    expect(config.collections).toHaveLength(4)
   })
 
   it('explains how to create a config when none exists', async () => {

@@ -25,6 +25,8 @@ interface BaseField<TType extends string, TValue> {
   readonly defaultValue?: TValue
   readonly validate?: FieldValidate<TValue>
   readonly access?: FieldAccess
+  /** Stored but never returned by the API nor accepted as input (e.g. a password hash). */
+  readonly hidden?: boolean
 }
 
 export interface TextField extends BaseField<'text', string> {

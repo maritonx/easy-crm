@@ -11,7 +11,14 @@ describe('resolveConfig', () => {
       maxFileSize: 10 * 1024 * 1024,
       mimeTypes: ['image/*', 'application/pdf'],
     })
-    expect(config.collections).toEqual([])
+    expect(config.auth).toEqual({
+      roles: ['admin', 'editor'],
+      tokenExpiration: 7 * 24 * 60 * 60,
+      maxLoginAttempts: 5,
+      lockWindow: 15 * 60,
+      trustedOrigins: [],
+    })
+    expect(config.collections.map((c) => c.slug)).toEqual(['users', 'sessions', 'login-attempts'])
     expect(config.globals).toEqual([])
     expect(config).not.toHaveProperty('plugins')
   })
@@ -58,7 +65,9 @@ describe('resolveConfig', () => {
       }
       const config = await resolveConfig(baseConfig({ plugins: [addPosts, addAuthor] }))
       expect(calls).toEqual(['addPosts', 'addAuthor'])
-      expect(config.collections[0]?.fields.map((f) => f.name)).toEqual(['author'])
+      expect(config.collections.find((c) => c.slug === 'posts')?.fields.map((f) => f.name)).toEqual(
+        ['author'],
+      )
     })
 
     it('have their output validated', async () => {

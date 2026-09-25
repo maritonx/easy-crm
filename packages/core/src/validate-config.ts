@@ -8,7 +8,7 @@ export const MIN_SECRET_LENGTH = 32
 export const BUILTIN_COLLECTIONS = ['users', 'media'] as const
 
 /** Slugs that would clash with Easy CMS's own tables or routes. */
-const RESERVED_SLUGS = new Set(['globals', 'sessions', 'migrations', 'access'])
+const RESERVED_SLUGS = new Set(['globals', 'sessions', 'login-attempts', 'migrations', 'access'])
 
 const SYSTEM_FIELD_NAMES = new Set(['id', 'createdAt', 'updatedAt'])
 
@@ -34,6 +34,7 @@ export function validateConfig(config: Config): ConfigIssue[] {
 
   validateAdmin(config, add)
   validateUpload(config, add)
+  validateAuth(config, add)
 
   const collections = asArray(config.collections, 'collections', add)
   const globals = asArray(config.globals, 'globals', add)
@@ -90,6 +91,35 @@ function validateAdmin(config: Config, add: Add) {
   }
   if (admin.locale !== undefined && admin.locale !== 'en' && admin.locale !== 'th') {
     add('admin.locale', `must be "en" or "th" (got ${JSON.stringify(admin.locale)})`)
+  }
+}
+
+function validateAuth(config: Config, add: Add) {
+  const auth = config.auth
+  if (auth === undefined) return
+  if (auth.roles !== undefined) {
+    const roles: unknown = auth.roles
+    if (!Array.isArray(roles) || roles.some((r) => typeof r !== 'string' || r === '')) {
+      add('auth.roles', 'must be an array of non-empty strings')
+    } else if (!roles.includes('admin')) {
+      add('auth.roles', 'must include "admin"', "e.g. roles: ['admin', 'editor']")
+    }
+  }
+  for (const key of ['tokenExpiration', 'maxLoginAttempts', 'lockWindow'] as const) {
+    const value = auth[key]
+    if (value !== undefined && !(Number.isInteger(value) && value > 0)) {
+      add(`auth.${key}`, 'must be a positive integer')
+    }
+  }
+  if (auth.trustedOrigins !== undefined) {
+    for (const [i, origin] of auth.trustedOrigins.entries()) {
+      if (typeof origin !== 'string' || !/^https?:\/\/[^/]+$/.test(origin)) {
+        add(
+          `auth.trustedOrigins[${i}]`,
+          `must be an origin like "https://example.com" (got ${JSON.stringify(origin)})`,
+        )
+      }
+    }
   }
 }
 

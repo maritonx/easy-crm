@@ -1,6 +1,6 @@
 import type { ID } from './access.js'
 import type { CollectionConfig } from './config.js'
-import type { Database, RawDocument } from './database.js'
+import type { RawDocument } from './database.js'
 import type { Field } from './fields.js'
 
 type Data = Record<string, unknown>
@@ -16,13 +16,16 @@ interface Slot {
   readonly assign: (byId: ReadonlyMap<ID, RawDocument>) => void
 }
 
+/** Loads the documents of one collection that the caller may see. */
+export type Loader = (collection: CollectionConfig, ids: readonly ID[]) => Promise<RawDocument[]>
+
 /**
  * Replaces relationship and upload ids with documents, `depth` levels deep.
- * Missing documents become `null` (single) or are dropped (hasMany).
+ * Missing (or unreadable) documents become `null` (single) or are dropped (hasMany).
  * Returns new objects; the input is not modified.
  */
 export async function populate(
-  db: Database,
+  load: Loader,
   collections: readonly CollectionConfig[],
   fields: readonly Field[],
   docs: RawDocument[],
@@ -48,8 +51,8 @@ export async function populate(
     [...wanted].map(async ([slug, ids]) => {
       const collection = bySlug.get(slug)
       if (!collection) return
-      const raw = await db.findByIds({ collection: slug, ids: [...ids] })
-      const populated = await populate(db, collections, collection.fields, raw, depth - 1)
+      const raw = await load(collection, [...ids])
+      const populated = await populate(load, collections, collection.fields, raw, depth - 1)
       found.set(slug, new Map(populated.map((d) => [d.id, d])))
     }),
   )

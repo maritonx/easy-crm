@@ -71,6 +71,29 @@ describe('validateConfig', () => {
     expect(issues.map((i) => i.path)).toEqual(['admin.path', 'admin.locale'])
   })
 
+  it('checks auth options', () => {
+    const issues = validateConfig(
+      baseConfig({
+        auth: {
+          roles: ['editor'],
+          tokenExpiration: 0,
+          maxLoginAttempts: 1.5,
+          trustedOrigins: ['https://ok.test', 'https://bad.test/path'],
+        },
+      }),
+    )
+    expect(issues.map((i) => i.path)).toEqual([
+      'auth.roles',
+      'auth.tokenExpiration',
+      'auth.maxLoginAttempts',
+      'auth.trustedOrigins[1]',
+    ])
+  })
+
+  it('reserves slugs used internally', () => {
+    expect(paths([{ slug: 'login-attempts', fields: [] }])).toEqual(['collections[0].slug'])
+  })
+
   describe('slugs', () => {
     it('rejects bad, reserved and duplicate slugs', () => {
       expect(

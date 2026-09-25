@@ -75,3 +75,26 @@ export class SchemaError extends EasyCMSError {
     this.name = 'SchemaError'
   }
 }
+
+/** Not logged in, or the session is invalid. */
+export class UnauthorizedError extends EasyCMSError {
+  constructor(message = 'You must be logged in') {
+    super(message, 401)
+    this.name = 'UnauthorizedError'
+  }
+}
+
+/** Logged in, but not allowed to do this. */
+export class ForbiddenError extends EasyCMSError {
+  constructor(message = 'You are not allowed to do this') {
+    super(message, 403)
+    this.name = 'ForbiddenError'
+  }
+}
+
+export class TooManyRequestsError extends EasyCMSError {
+  constructor(message: string) {
+    super(message, 429)
+    this.name = 'TooManyRequestsError'
+  }
+}

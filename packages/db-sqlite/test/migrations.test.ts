@@ -37,10 +37,13 @@ describe('development push (FR-DAT-02)', () => {
     await cms.destroy()
     expect(await tables(cms.cwd)).toEqual([
       'ecms_globals',
+      'ecms_login_attempts',
       'ecms_migrations',
       'ecms_posts',
       'ecms_posts__rows',
       'ecms_posts__tags',
+      'ecms_sessions',
+      'ecms_users',
     ])
     expect(await columns(cms.cwd, 'ecms_posts')).toEqual([
       'id',
@@ -102,8 +105,11 @@ describe('development push (FR-DAT-02)', () => {
 
     expect(await tables(cwd)).toEqual([
       'ecms_globals',
+      'ecms_login_attempts',
       'ecms_migrations',
       'ecms_posts',
+      'ecms_sessions',
+      'ecms_users',
       'posts',
       'users',
     ])
@@ -118,7 +124,14 @@ describe('development push (FR-DAT-02)', () => {
       db: sqlite({ url: 'file:./cms.db', tablePrefix: 'cms_' }),
     })
     await cms.destroy()
-    expect(await tables(cms.cwd)).toEqual(['cms_globals', 'cms_migrations', 'cms_posts'])
+    expect(await tables(cms.cwd)).toEqual([
+      'cms_globals',
+      'cms_login_attempts',
+      'cms_migrations',
+      'cms_posts',
+      'cms_sessions',
+      'cms_users',
+    ])
   })
 
   it('reports column name clashes as config errors', async () => {

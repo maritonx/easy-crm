@@ -156,8 +156,13 @@ GraphQL ยกไป v2+
 ## 9. Auth และ Access Control
 
 - **Users ในตัว:** collection `users` แยกจาก user ของแอปลูกค้า, login ด้วย email + password
-- **Session:** cookie แบบ httpOnly, Secure, SameSite=Lax, ลงนามด้วย `EASY_CMS_SECRET`
-- **Password:** scrypt (`node:crypto`)
+- **Session:** cookie แบบ httpOnly, Secure, SameSite=Lax, ลงนามด้วย `EASY_CMS_SECRET`; DB เก็บแค่ SHA-256 ของ token ใน collection ภายใน `sessions`
+- **Bearer token:** client ที่ไม่ใช่ browser ส่ง `Authorization: Bearer <token>` ได้
+- **CSRF:** request ที่เขียนข้อมูลต้องมี `Origin` เป็นของเราเองหรืออยู่ใน `auth.trustedOrigins` และถ้าใช้ cookie ต้องส่ง header `x-csrf-token` (HMAC ของ session ที่ได้จาก `GET /users/me`)
+- **Password:** scrypt (N=2^17, r=8, p=1) เก็บค่า cost ไว้ใน hash
+- **Rate limit:** นับ login ที่ผิดใน collection ภายใน `login-attempts` จึงนับรวมได้แม้มีหลาย instance
+- **Hidden fields:** `hidden: true` เก็บใน DB แต่ไม่ถูกส่งออกทาง API และรับเป็น input ไม่ได้ (ใช้กับ `passwordHash`)
+- **Field access:** ถ้า field ใน array ถูกจำกัดสิทธิ์ `update` การแก้ array นั้นจะแทนทั้ง array ทำให้ค่าของ field นั้นหายไป (ข้อจำกัดของ v0.1)
 - **Access:** เขียนเป็นฟังก์ชันต่อ operation ต่อ collection (`read/create/update/delete`), มี helper `isAdmin`, `isLoggedIn`
 - **Default:** ทุก operation **ปิด** สำหรับผู้ที่ไม่ได้ login จนกว่า developer จะเปิดเอง
 - **เผื่อ v2:** `auth.strategy` สำหรับเสียบ auth ภายนอก

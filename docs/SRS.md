@@ -154,7 +154,8 @@ Host app ─► Local API ┘
 | FR-REST-02 | Query string ต้องรองรับ `where`, `sort`, `limit`, `page`, `depth` ให้มีความหมายเดียวกับ Local API | MUST |
 | FR-REST-03 | REST ต้องตรวจ access ทุก request เสมอ | MUST |
 | FR-REST-04 | Error ต้องคืน JSON รูปแบบ `{ errors: [{ message, field? }] }` พร้อม status code ที่เหมาะสม (400, 401, 403, 404, 409, 413, 429, 500) | MUST |
-| FR-REST-05 | ต้องมี auth endpoints: `POST /users/login`, `POST /users/logout`, `GET /users/me` | MUST |
+| FR-REST-05 | ต้องมี auth endpoints: `POST /users/login`, `POST /users/logout`, `GET /users/me`, `GET /users/init` (มี user แล้วหรือยัง), `POST /users/first-register` (สร้าง admin คนแรก) | MUST |
+| FR-REST-07 | ต้องรับ `Authorization: Bearer <token>` สำหรับ client ที่ไม่ใช่ browser (ไม่ต้องใช้ CSRF token) | SHOULD |
 | FR-REST-06 | Error 500 ต้องไม่ส่ง stack trace กลับไปใน production | MUST |
 
 ### 3.7 Authentication (AUTH)
@@ -165,7 +166,8 @@ Host app ─► Local API ┘
 | FR-AUTH-02 | Password ต้อง hash ด้วย scrypt พร้อม salt แยกต่อ user และต้องไม่เก็บ plain text หรือคืนค่า hash ออกทาง API | MUST |
 | FR-AUTH-03 | เมื่อ login สำเร็จ ระบบต้องออก session cookie แบบ httpOnly, Secure (ใน production), SameSite=Lax ที่ลงนามด้วย `secret` | MUST |
 | FR-AUTH-04 | Session ต้องหมดอายุตามค่าที่กำหนด (default 7 วัน) และ logout ต้องทำให้ session ใช้ไม่ได้ทันที | MUST |
-| FR-AUTH-05 | ต้องจำกัดจำนวนครั้งที่ login ผิด (default 5 ครั้งต่อ 15 นาทีต่อ email + IP) และคืน 429 เมื่อเกิน | MUST |
+| FR-AUTH-05 | ต้องจำกัดจำนวนครั้งที่ login ผิด (default 5 ครั้งต่อ 15 นาทีต่อ email + IP) และคืน 429 เมื่อเกิน IP มาจาก adapter (`getClientIp`) ถ้าไม่มีจะนับตาม email อย่างเดียว | MUST |
+| FR-AUTH-10 | Role กำหนดได้ผ่าน `auth.roles` (ต้องมี `admin`) และระบบต้องไม่ยอมให้ลด role, ปิดใช้งาน หรือลบ admin คนสุดท้ายที่ยังใช้งานอยู่ | MUST |
 | FR-AUTH-06 | Password ต้องยาวอย่างน้อย 8 ตัวอักษร | MUST |
 | FR-AUTH-07 | Admin ต้องสร้าง, แก้ไข, ปิดการใช้งานและรีเซ็ต password ของ user อื่นได้ผ่านหน้า Admin | MUST |
 | FR-AUTH-08 | User ต้องเปลี่ยน password ของตัวเองได้ | MUST |
@@ -400,3 +402,4 @@ v0.1 ผ่านการตรวจรับเมื่อครบทุก
 |---|---|---|
 | 1.0 | 2026-09-25 | ฉบับแรก จากการสรุปการออกแบบใน [DESIGN.md](DESIGN.md) |
 | 1.1 | 2026-09-25 | เปลี่ยน Node ขั้นต่ำเป็น 22.12 เพราะ Node 20 EOL แล้ว |
+| 1.2 | 2026-09-25 | M2: เพิ่ม FR-REST-05 (init, first-register), FR-REST-07 (Bearer), FR-AUTH-10 (roles, admin คนสุดท้าย) |

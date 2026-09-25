@@ -84,6 +84,22 @@ export interface UploadConfig {
   readonly mimeTypes?: readonly string[]
 }
 
+export interface AuthConfig {
+  /** Roles a user can have. Must include `admin`. Default `['admin', 'editor']`. */
+  readonly roles?: readonly string[]
+  /** Session lifetime in seconds. Default 7 days. */
+  readonly tokenExpiration?: number
+  /** Failed logins allowed per email (and IP) within `lockWindow`. Default 5. */
+  readonly maxLoginAttempts?: number
+  /** Window for `maxLoginAttempts`, in seconds. Default 15 minutes. */
+  readonly lockWindow?: number
+  /**
+   * Origins allowed to send cookie-authenticated requests, besides the API's own origin.
+   * Needed when the admin or frontend is served from another origin, or behind a proxy that rewrites the host.
+   */
+  readonly trustedOrigins?: readonly string[]
+}
+
 /** Receives the config and returns a modified copy. Runs before validation. */
 export type Plugin = (config: Config) => MaybePromise<Config>
 
@@ -93,6 +109,11 @@ export interface Config {
   readonly db: DatabaseAdapter
   readonly admin?: AdminConfig
   readonly upload?: UploadConfig
+  readonly auth?: AuthConfig
+  /**
+   * Collections. A collection with slug `users` adds fields, access or hooks
+   * to the built-in users collection.
+   */
   readonly collections?: readonly CollectionConfig[]
   readonly globals?: readonly GlobalConfig[]
   readonly plugins?: readonly Plugin[]
@@ -100,9 +121,10 @@ export interface Config {
 
 /** The config after plugins ran, validation passed and defaults were applied. */
 export interface ResolvedConfig
-  extends Omit<Config, 'admin' | 'upload' | 'collections' | 'globals' | 'plugins'> {
+  extends Omit<Config, 'admin' | 'upload' | 'auth' | 'collections' | 'globals' | 'plugins'> {
   readonly admin: Required<AdminConfig>
   readonly upload: Required<UploadConfig>
+  readonly auth: Required<AuthConfig>
   readonly collections: readonly CollectionConfig[]
   readonly globals: readonly GlobalConfig[]
 }

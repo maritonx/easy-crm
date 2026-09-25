@@ -12,10 +12,28 @@ type SelectValue<F> = F extends { readonly options: readonly (infer O extends Se
     : OptionValue<O>
   : never
 
-type CollectionBySlug<C extends Config, S> = Extract<
-  NonNullable<C['collections']>[number],
-  { readonly slug: S }
->
+/** The built-in users collection as seen by the type system (hidden fields left out). */
+export interface BuiltinUsersCollection {
+  readonly slug: 'users'
+  readonly fields: readonly [
+    { readonly name: 'email'; readonly type: 'email'; readonly required: true },
+    { readonly name: 'name'; readonly type: 'text' },
+    {
+      readonly name: 'role'
+      readonly type: 'select'
+      readonly options: readonly string[]
+      readonly required: true
+    },
+    { readonly name: 'active'; readonly type: 'boolean' },
+  ]
+}
+
+/** Every collection of a config, including the built-in users collection. */
+type AllCollections<C extends Config> =
+  | NonNullable<C['collections']>[number]
+  | BuiltinUsersCollection
+
+type CollectionBySlug<C extends Config, S> = Extract<AllCollections<C>, { readonly slug: S }>
 
 /** Relationships are ids at depth 0 and documents when populated. */
 type RelationValue<C extends Config, S> = [CollectionBySlug<C, S>] extends [never]
@@ -67,8 +85,9 @@ export type FieldValue<F extends Field, C extends Config = Config> = F extends {
                     ? FieldsValue<Sub, C>
                     : never
 
-type RequiredFields<Fs extends readonly Field[]> = Extract<Fs[number], { readonly required: true }>
-type OptionalFields<Fs extends readonly Field[]> = Exclude<Fs[number], { readonly required: true }>
+type Visible<Fs extends readonly Field[]> = Exclude<Fs[number], { readonly hidden: true }>
+type RequiredFields<Fs extends readonly Field[]> = Extract<Visible<Fs>, { readonly required: true }>
+type OptionalFields<Fs extends readonly Field[]> = Exclude<Visible<Fs>, { readonly required: true }>
 
 /** The shape of the data described by a list of fields. */
 export type FieldsValue<Fs extends readonly Field[], C extends Config = Config> = Simplify<
@@ -95,7 +114,9 @@ export type InferGlobal<T extends GlobalConfig, C extends Config = Config> = Sim
     FieldsValue<T['fields'], C>
 >
 
-export type CollectionSlug<C extends Config> = NonNullable<C['collections']>[number]['slug']
+export type CollectionSlug<C extends Config> =
+  | NonNullable<C['collections']>[number]['slug']
+  | 'users'
 export type GlobalSlug<C extends Config> = NonNullable<C['globals']>[number]['slug']
 
 /** Document type of a collection, e.g. `CollectionDocument<typeof config, 'posts'>`. */
@@ -142,8 +163,11 @@ type NeedsInput<F extends Field> = F extends { readonly required: true }
   : never
 
 export type FieldsInput<Fs extends readonly Field[]> = Simplify<
-  { -readonly [F in NeedsInput<Fs[number]> as F['name']]: InputValue<F> } & {
-    -readonly [F in Exclude<Fs[number], NeedsInput<Fs[number]>> as F['name']]?: InputValue<F> | null
+  { -readonly [F in NeedsInput<Visible<Fs>> as F['name']]: InputValue<F> } & {
+    -readonly [F in Exclude<
+      Visible<Fs>,
+      NeedsInput<Visible<Fs>>
+    > as F['name']]?: InputValue<F> | null
   }
 >
 
@@ -151,9 +175,18 @@ type StatusInput<T> = T extends { readonly drafts: true }
   ? { status?: 'draft' | 'published' }
   : unknown
 
+/** Users are created with a password, which is hashed and never returned. */
+type PasswordInput<S, Required extends boolean> = S extends 'users'
+  ? Required extends true
+    ? { password: string }
+    : { password?: string }
+  : unknown
+
 /** Data accepted by `create`, e.g. `CreateInput<typeof config, 'posts'>`. */
 export type CreateInput<C extends Config, S extends CollectionSlug<C>> = Simplify<
-  FieldsInput<CollectionBySlug<C, S>['fields']> & StatusInput<CollectionBySlug<C, S>>
+  FieldsInput<CollectionBySlug<C, S>['fields']> &
+    StatusInput<CollectionBySlug<C, S>> &
+    PasswordInput<S, true>
 >
 
 /** Data accepted by `update`: any subset of `CreateInput`. */

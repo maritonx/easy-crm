@@ -64,7 +64,7 @@ type Author = CollectionDocument<Config, 'authors'>
 
 describe('type inference', () => {
   it('lists slugs', () => {
-    expectTypeOf<CollectionSlug<Config>>().toEqualTypeOf<'posts' | 'authors'>()
+    expectTypeOf<CollectionSlug<Config>>().toEqualTypeOf<'posts' | 'authors' | 'users'>()
   })
 
   it('adds system fields', () => {
