@@ -1,6 +1,6 @@
 {
   "name": "create-easy-cms",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Add Easy CMS to a Nuxt or Next.js project",
   "license": "MIT",
   "type": "module",
