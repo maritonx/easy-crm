@@ -1,0 +1,47 @@
+{
+  "name": "easy-cms",
+  "version": "0.0.0",
+  "description": "Command line tool for Easy CMS",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "easy-cms": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@easy-cms/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@easy-cms/db-sqlite": "workspace:^"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "easy-cms",
+    "cms",
+    "cli"
+  ]
+}

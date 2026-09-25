@@ -1,0 +1,53 @@
+{
+  "name": "@easy-cms/db-sqlite",
+  "version": "0.0.0",
+  "description": "SQLite / libSQL database adapter for Easy CMS",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "drizzle-kit": "0.31.11",
+    "drizzle-orm": "0.45.3"
+  },
+  "peerDependencies": {
+    "@easy-cms/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@easy-cms/core": "workspace:^"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "directory": "packages/db-sqlite"
+  },
+  "keywords": [
+    "easy-cms",
+    "sqlite",
+    "libsql",
+    "turso",
+    "drizzle"
+  ]
+}

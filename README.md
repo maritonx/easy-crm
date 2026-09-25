@@ -2,13 +2,15 @@
 
 Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
 
-> ⚠️ Early development (milestone M0). See [docs/DESIGN.md](docs/DESIGN.md) and [docs/SRS.md](docs/SRS.md).
+> ⚠️ Early development (milestone M1). See [docs/DESIGN.md](docs/DESIGN.md) and [docs/SRS.md](docs/SRS.md).
 
 ## Packages
 
 | Package | Status |
 |---|---|
-| [`@easy-cms/core`](packages/core) | config, validation, type inference |
+| [`@easy-cms/core`](packages/core) | config, validation, type inference, Local API |
+| [`@easy-cms/db-sqlite`](packages/db-sqlite) | SQLite / libSQL adapter, migrations |
+| [`easy-cms`](packages/cli) | CLI: `migrate`, `migrate:create`, `migrate:status` |
 
 ## Development
 

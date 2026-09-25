@@ -139,6 +139,8 @@ export default defineConfig({
   - Prod: ใช้ migration files ที่ commit ลง git (`easy-cms migrate:create`, `easy-cms migrate`)
   - ถ้าพบ schema drift บน prod → แจ้ง error และ **ไม่** push อัตโนมัติ
 - **เผื่อ v2:** ออกแบบ schema ให้เพิ่ม version history และ localization ภายหลังได้โดยไม่ต้องรื้อโครงสร้าง
+- **รูปแบบตาราง:** collection → `ecms_<slug>`, array และ hasMany → ตารางลูก `ecms_<slug>__<field>`, globals → JSON ใน `ecms_globals`, ID เป็น integer, ไม่ใช้ foreign key → ดู [ADR-0005](adr/0005-storage-layout.md)
+- **Migration files:** `easy-cms/migrations/<timestamp>_<name>.sql` + `.json` ตอน production ตรวจด้วย hash ของ schema
 
 ## 8. API
 
@@ -246,3 +248,4 @@ easy-cms serve               # standalone (v0.2)
 - [ADR-0002](adr/0002-prebuilt-vue-admin-spa.md) — Admin UI เป็น Vue SPA ที่ build มาพร้อม package
 - [ADR-0003](adr/0003-drizzle-sqlite-postgres.md) — Drizzle + SQLite/Postgres
 - [ADR-0004](adr/0004-code-first-content-model.md) — Content model แบบ code-first
+- [ADR-0005](adr/0005-storage-layout.md) — รูปแบบการเก็บข้อมูลและ migration

@@ -28,7 +28,7 @@ export function validateConfig(config: Config): ConfigIssue[] {
 
   validateSecret(config.secret, add)
 
-  if (!config.db || typeof config.db.name !== 'string') {
+  if (!config.db || typeof config.db.name !== 'string' || typeof config.db.init !== 'function') {
     add('db', 'is required', "pass a database adapter, e.g. db: sqlite({ url: 'file:./cms.db' })")
   }
 

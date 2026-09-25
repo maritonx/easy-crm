@@ -1,1 +1,1 @@
-export default { secret: 'short', db: { name: 'test' } }
+export default { secret: 'short', db: { name: 'x', init() {} } }

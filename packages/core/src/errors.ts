@@ -24,3 +24,54 @@ export class ConfigError extends Error {
     return `Invalid Easy CMS config (${issues.length} ${noun}):\n${lines.join('\n')}`
   }
 }
+
+/** Base class for errors that map to an HTTP status in the REST API. */
+export class EasyCMSError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'EasyCMSError'
+    this.status = status
+  }
+}
+
+export interface FieldError {
+  /** Dotted path, e.g. `links.0.url`. */
+  readonly field: string
+  readonly message: string
+}
+
+export class ValidationError extends EasyCMSError {
+  readonly errors: readonly FieldError[]
+
+  constructor(collection: string, errors: readonly FieldError[]) {
+    const list = errors.map((e) => `${e.field}: ${e.message}`).join('; ')
+    super(`Invalid data for "${collection}": ${list}`, 400)
+    this.name = 'ValidationError'
+    this.errors = errors
+  }
+}
+
+export class NotFoundError extends EasyCMSError {
+  constructor(collection: string, id: unknown) {
+    super(`No document with id ${JSON.stringify(id)} in "${collection}"`, 404)
+    this.name = 'NotFoundError'
+  }
+}
+
+/** A bad `where`, `sort` or unknown collection/global. */
+export class QueryError extends EasyCMSError {
+  constructor(message: string) {
+    super(message, 400)
+    this.name = 'QueryError'
+  }
+}
+
+/** The database schema does not match the config (pending or missing migrations). */
+export class SchemaError extends EasyCMSError {
+  constructor(message: string) {
+    super(message, 500)
+    this.name = 'SchemaError'
+  }
+}

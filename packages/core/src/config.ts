@@ -1,4 +1,5 @@
 import type { AuthUser, CollectionAccess, GlobalAccess, ID } from './access.js'
+import type { DatabaseAdapter } from './database.js'
 import type { Field, Label } from './fields.js'
 
 type Data = Record<string, unknown>
@@ -63,11 +64,6 @@ export interface GlobalConfig {
   readonly drafts?: boolean
   readonly access?: GlobalAccess
   readonly hooks?: GlobalHooks
-}
-
-/** Implemented by `@easy-cms/db-sqlite` and `@easy-cms/db-postgres`. Expanded in M1. */
-export interface DatabaseAdapter {
-  readonly name: string
 }
 
 export type AdminLocale = 'en' | 'th'

@@ -88,7 +88,8 @@ export type InferCollection<T extends CollectionConfig, C extends Config = Confi
 >
 
 export type InferGlobal<T extends GlobalConfig, C extends Config = Config> = Simplify<
-  { updatedAt: string } & (T extends { readonly drafts: true }
+  /** `null` until the global is saved for the first time. */
+  { updatedAt: string | null } & (T extends { readonly drafts: true }
     ? { status: 'draft' | 'published' }
     : unknown) &
     FieldsValue<T['fields'], C>
@@ -107,4 +108,61 @@ export type CollectionDocument<C extends Config, S extends CollectionSlug<C>> = 
 export type GlobalDocument<C extends Config, S extends GlobalSlug<C>> = InferGlobal<
   Extract<NonNullable<C['globals']>[number], { readonly slug: S }>,
   C
+>
+
+// ---------------------------------------------------------------------------
+// Input types for create / update
+
+type InputValue<F extends Field> = F extends { readonly type: 'relationship' }
+  ? F extends { readonly hasMany: true }
+    ? readonly ID[]
+    : ID
+  : F extends { readonly type: 'select'; readonly hasMany: true }
+    ? Readonly<SelectValue<F>>
+    : F extends { readonly type: 'upload' }
+      ? ID
+      : F extends { readonly type: 'date' }
+        ? string | Date
+        : F extends { readonly type: 'array'; readonly fields: infer Sub extends readonly Field[] }
+          ? readonly Simplify<FieldsInput<Sub> & { id?: string }>[]
+          : F extends {
+                readonly type: 'group'
+                readonly fields: infer Sub extends readonly Field[]
+              }
+            ? FieldsInput<Sub>
+            : FieldValue<F>
+
+/** Required fields must be given, unless Easy CMS can fill them (default value, slug from another field). */
+type NeedsInput<F extends Field> = F extends { readonly required: true }
+  ? F extends { readonly defaultValue: unknown }
+    ? never
+    : F extends { readonly type: 'slug'; readonly from: string }
+      ? never
+      : F
+  : never
+
+export type FieldsInput<Fs extends readonly Field[]> = Simplify<
+  { -readonly [F in NeedsInput<Fs[number]> as F['name']]: InputValue<F> } & {
+    -readonly [F in Exclude<Fs[number], NeedsInput<Fs[number]>> as F['name']]?: InputValue<F> | null
+  }
+>
+
+type StatusInput<T> = T extends { readonly drafts: true }
+  ? { status?: 'draft' | 'published' }
+  : unknown
+
+/** Data accepted by `create`, e.g. `CreateInput<typeof config, 'posts'>`. */
+export type CreateInput<C extends Config, S extends CollectionSlug<C>> = Simplify<
+  FieldsInput<CollectionBySlug<C, S>['fields']> & StatusInput<CollectionBySlug<C, S>>
+>
+
+/** Data accepted by `update`: any subset of `CreateInput`. */
+export type UpdateInput<C extends Config, S extends CollectionSlug<C>> = Partial<CreateInput<C, S>>
+
+/** Data accepted by `updateGlobal`. */
+export type GlobalInput<C extends Config, S extends GlobalSlug<C>> = Partial<
+  Simplify<
+    FieldsInput<Extract<NonNullable<C['globals']>[number], { readonly slug: S }>['fields']> &
+      StatusInput<Extract<NonNullable<C['globals']>[number], { readonly slug: S }>>
+  >
 >

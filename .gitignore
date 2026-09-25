@@ -8,3 +8,4 @@ coverage/
 !.env.example
 *.db
 .DS_Store
+test/.tmp/

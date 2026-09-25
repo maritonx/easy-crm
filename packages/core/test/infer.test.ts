@@ -11,12 +11,13 @@ import {
   type MediaDocument,
   type RichTextDocument,
 } from '../src/index.js'
+import { fakeDb } from './helpers.js'
 
 // These assertions are checked by `pnpm typecheck`; at runtime they are no-ops.
 
 const config = defineConfig({
   secret: 'x'.repeat(32),
-  db: { name: 'test' },
+  db: fakeDb,
   collections: [
     {
       slug: 'posts',
@@ -105,12 +106,33 @@ describe('type inference', () => {
 
   it('infers globals', () => {
     expectTypeOf<GlobalDocument<Config, 'site'>>().toEqualTypeOf<{
-      updatedAt: string
+      updatedAt: string | null
       siteName: string
     }>()
   })
 
   it('FIELD_TYPES lists every field type', () => {
     expectTypeOf<(typeof FIELD_TYPES)[number]>().toEqualTypeOf<FieldType>()
+  })
+})
+
+describe('input types', () => {
+  it('requires required fields unless Easy CMS can fill them', () => {
+    type Input = import('../src/index.js').CreateInput<Config, 'posts'>
+    expectTypeOf<Input>().toHaveProperty('title')
+    expectTypeOf<{ title: string; featured: boolean; kind: 'news'; author: 1 }>().toExtend<Input>()
+    expectTypeOf<{ title: string }>().not.toExtend<Input>()
+  })
+
+  it('accepts ids for relationships and readonly arrays', () => {
+    type Input = import('../src/index.js').CreateInput<Config, 'posts'>
+    expectTypeOf<Input['author']>().toEqualTypeOf<ID>()
+    expectTypeOf<readonly ['a']>().toExtend<NonNullable<Input['tags']>>()
+    expectTypeOf<readonly [{ url: string }]>().toExtend<NonNullable<Input['links']>>()
+    expectTypeOf<Input['status']>().toEqualTypeOf<'draft' | 'published' | undefined>()
+  })
+
+  it('makes every field optional on update', () => {
+    expectTypeOf<{ views: 1 }>().toExtend<import('../src/index.js').UpdateInput<Config, 'posts'>>()
   })
 })
