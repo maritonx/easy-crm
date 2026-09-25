@@ -66,5 +66,63 @@ Files are served at `/api/cms/media/file/<name>` with long-lived caching and a s
 Security Policy, so an uploaded SVG can't run scripts. Set `serverURL` for absolute URLs.
 
 The default storage is the local disk (`upload.dir`, default `uploads/`), which needs a persistent
-filesystem. For your own storage implement `StorageAdapter` (`put`, `get`, `delete`, optional
-`url`) and pass it as `upload.storage`. An S3-compatible adapter is planned for v0.2.
+filesystem. On serverless hosts (Vercel, Netlify) and in containers without a volume, use S3.
+
+## S3, Cloudflare R2 and MinIO
+
+```bash
+npm install @easy-cms/storage-s3
+```
+
+```ts
+import { s3Storage } from '@easy-cms/storage-s3'
+
+export default defineConfig({
+  // …
+  upload: {
+    storage: s3Storage({ bucket: 'my-site-media', region: 'eu-central-1' }),
+  },
+})
+```
+
+Credentials come from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (and `AWS_SESSION_TOKEN`,
+`AWS_REGION`) unless you pass `accessKeyId` / `secretAccessKey`. They are read when the CMS
+starts, so building without them works.
+
+| Option | Default | |
+|---|---|---|
+| `bucket` | required | Bucket name |
+| `region` | `AWS_REGION`, then `us-east-1` | `auto` for Cloudflare R2 |
+| `endpoint` | AWS S3 | For S3-compatible services, e.g. `https://<account>.r2.cloudflarestorage.com` |
+| `prefix` | none | Folder for the objects, e.g. `media/` |
+| `publicUrl` | none | Serve files from here (CDN or public bucket) instead of through the API |
+| `forcePathStyle` | `true` with `endpoint` | `<endpoint>/<bucket>/<key>` addressing |
+
+Cloudflare R2:
+
+```ts
+s3Storage({
+  bucket: 'my-site-media',
+  region: 'auto',
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  accessKeyId: process.env.R2_ACCESS_KEY_ID,
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+})
+```
+
+The access key needs `s3:PutObject`, `s3:GetObject` and `s3:DeleteObject` on the bucket.
+
+**Private bucket (default).** Without `publicUrl`, files are streamed through
+`/api/cms/media/file/<name>` with the same caching and sandboxing headers as local storage, so
+the bucket stays private. Put a CDN in front of your site to avoid fetching from S3 on every
+request.
+
+**Public bucket.** With `publicUrl`, media URLs point to the bucket or CDN directly and your
+server is not involved. Serve it from a **different domain** than your site: the sandboxing
+Content Security Policy is not applied there, so an uploaded SVG could otherwise run scripts
+with your site's origin.
+
+## Custom storage
+
+Implement `StorageAdapter` (`put`, `get`, `delete`, optional `url` and `init`) and pass it as
+`upload.storage`.

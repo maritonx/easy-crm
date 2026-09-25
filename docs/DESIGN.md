@@ -258,3 +258,4 @@ easy-cms serve               # standalone (v0.2)
 - [ADR-0007](adr/0007-admin-ui.md) — โครงสร้างของหน้า Admin
 - [ADR-0008](adr/0008-media-drafts-hooks.md) — Media, drafts และ hooks
 - [ADR-0009](adr/0009-postgres-and-next.md) — Postgres adapter, shared Drizzle layer และ Next.js adapter
+- [ADR-0010](adr/0010-s3-storage.md) — S3-compatible storage (`@easy-cms/storage-s3`)

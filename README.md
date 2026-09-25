@@ -57,7 +57,8 @@ REST at `/api/cms`.
   frontends in other repositories
 - **Auth and access control**: built-in users and roles, function-based access rules per
   collection and document
-- **Uploads** with image sizes (optional `sharp`), **drafts**, **globals** and **hooks**
+- **Uploads** with image sizes (optional `sharp`) on local disk or S3 / R2, **drafts**, **globals**
+  and **hooks**
 - **SQLite** (libSQL) or **Postgres** (postgres.js or PGlite) through Drizzle, sharing your app's
   database with `ecms_`-prefixed tables
 - **Migrations**: automatic schema push in development, reviewed migration files in production
@@ -72,6 +73,7 @@ Design notes: [docs/DESIGN.md](docs/DESIGN.md) · Requirements: [docs/SRS.md](do
 | [`@easy-cms/db-sqlite`](packages/db-sqlite) | SQLite / libSQL adapter |
 | [`@easy-cms/db-postgres`](packages/db-postgres) | PostgreSQL adapter (postgres.js or PGlite) |
 | [`@easy-cms/drizzle`](packages/drizzle) | Shared Drizzle layer for the adapters |
+| [`@easy-cms/storage-s3`](packages/storage-s3) | Upload storage on S3, Cloudflare R2 or MinIO |
 | [`@easy-cms/admin`](packages/admin) | Admin UI (Vue 3 SPA) served at `/admin` |
 | [`@easy-cms/richtext`](packages/richtext) | `renderRichText()`: Tiptap JSON → safe HTML |
 | [`@easy-cms/nuxt`](packages/nuxt) | Nuxt 4 module: REST API, admin, typed `useEasyCMS()` |

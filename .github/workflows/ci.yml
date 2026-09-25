@@ -64,6 +64,33 @@ jobs:
       - run: pnpm build
       - run: pnpm --filter easy-cms-integration-tests exec vitest run --project postgres
 
+  s3:
+    runs-on: ubuntu-latest
+    services:
+      # S3-compatible server that verifies SigV4 signatures (MinIO no longer publishes images).
+      s3:
+        image: rustfs/rustfs:1.0.0
+        env:
+          RUSTFS_ACCESS_KEY: ecmsaccess
+          RUSTFS_SECRET_KEY: ecmssecret123
+        ports: ['9000:9000']
+    env:
+      S3_TEST_ENDPOINT: http://localhost:9000
+      S3_TEST_ACCESS_KEY: ecmsaccess
+      S3_TEST_SECRET_KEY: ecmssecret123
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Wait for the S3 server
+        run: for i in $(seq 1 30); do curl -s -o /dev/null localhost:9000 && exit 0; sleep 1; done; exit 1
+      - run: pnpm --filter @easy-cms/storage-s3 test
+
   e2e:
     runs-on: ubuntu-latest
     steps:

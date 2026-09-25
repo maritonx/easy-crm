@@ -49,7 +49,8 @@ When `EASY_CMS_SECRET` is missing, the API answers `500` and the log says
 - The `easy-cms/migrations` folder deployed, and `easy-cms migrate` run
 - Start the server **from the project root**: relative database paths, migrations and uploads
   resolve from the working directory
-- Uploads on local disk need a persistent volume (serverless platforms don't have one yet)
+- Uploads on local disk need a persistent volume; on serverless platforms use
+  [S3 storage](./uploads#s3-cloudflare-r2-and-minio)
 - Build on the same OS and architecture as the server when using SQLite (native driver)
 - Behind a trusted proxy, enable `trustProxy` for per-IP login rate limiting
 - Set `auth.trustedOrigins` if the admin or frontend call the API from another origin
