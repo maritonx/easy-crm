@@ -1,28 +1,26 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { type Logger, SchemaError } from '@easy-cms/core'
-import type { Client, InStatement } from '@libsql/client'
+import type { Dialect, Snapshot, SqlRunner, Statement } from './dialect.js'
 import type { SchemaModel } from './schema.js'
 
-/** drizzle-kit's SQLite snapshot. Loaded lazily: drizzle-kit is only needed in development and the CLI. */
-// biome-ignore lint/suspicious/noExplicitAny: drizzle-kit does not export a stable snapshot type
-type Snapshot = Record<string, any>
-
 const BREAKPOINT = '--> statement-breakpoint'
-
-const kit = () => import('drizzle-kit/api')
-
-async function snapshotOf(schema: SchemaModel | null): Promise<Snapshot> {
-  const api = await kit()
-  return api.generateSQLiteDrizzleJson(schema ? { ...schema.tables } : {})
-}
+const TABLE_PARTS = [
+  'columns',
+  'indexes',
+  'foreignKeys',
+  'compositePrimaryKeys',
+  'uniqueConstraints',
+  'checkConstraints',
+  'policies',
+]
 
 /**
  * Unions two snapshots: every table, column and index from either side.
  * Diffing prev → union → cur splits a change into "add only" and "drop only"
  * steps, so drizzle-kit never has to ask whether something was renamed.
  */
-function unionSnapshot(prev: Snapshot, cur: Snapshot): Snapshot {
+export function unionSnapshot(prev: Snapshot, cur: Snapshot): Snapshot {
   const merged = structuredClone(cur)
   for (const [name, table] of Object.entries(prev.tables ?? {}) as [string, Snapshot][]) {
     const target = merged.tables[name]
@@ -30,14 +28,8 @@ function unionSnapshot(prev: Snapshot, cur: Snapshot): Snapshot {
       merged.tables[name] = structuredClone(table)
       continue
     }
-    for (const key of [
-      'columns',
-      'indexes',
-      'foreignKeys',
-      'compositePrimaryKeys',
-      'uniqueConstraints',
-      'checkConstraints',
-    ]) {
+    for (const key of TABLE_PARTS) {
+      if (!(key in table)) continue
       target[key] ??= {}
       for (const [entry, value] of Object.entries(table[key] ?? {})) {
         if (!(entry in target[key])) target[key][entry] = structuredClone(value)
@@ -47,17 +39,7 @@ function unionSnapshot(prev: Snapshot, cur: Snapshot): Snapshot {
   return merged
 }
 
-/** SQL statements that turn `prev` into `cur`. Renames become drop + add unless `interactive`. */
-async function diff(prev: Snapshot, cur: Snapshot, interactive: boolean): Promise<string[]> {
-  const api = await kit()
-  if (interactive) return api.generateSQLiteMigration(prev as never, cur as never)
-  const union = unionSnapshot(prev, cur)
-  const adds = await api.generateSQLiteMigration(prev as never, union as never)
-  const drops = await api.generateSQLiteMigration(union as never, cur as never)
-  return [...adds, ...drops]
-}
-
-const DESTRUCTIVE = /\b(DROP TABLE|DROP COLUMN)\b|`__new_/i
+const DESTRUCTIVE = /\b(DROP TABLE|DROP COLUMN)\b|__new_/i
 
 interface MigrationRow {
   name: string
@@ -73,7 +55,8 @@ interface MigrationFile {
 }
 
 export interface MigratorOptions {
-  readonly client: Client
+  readonly dialect: Dialect
+  readonly runner: SqlRunner
   readonly schema: SchemaModel
   readonly table: string
   readonly dir: string
@@ -87,27 +70,47 @@ const DEV_PUSH = 'dev'
 export class Migrator {
   constructor(private readonly options: MigratorOptions) {}
 
-  private get client() {
-    return this.options.client
+  private get runner() {
+    return this.options.runner
+  }
+
+  private q(name: string) {
+    return this.options.dialect.name === 'postgres' ? `"${name}"` : `\`${name}\``
+  }
+
+  private snapshotOf(schema: SchemaModel | null): Promise<Snapshot> {
+    return this.options.dialect.snapshot(schema ? schema.tables : {})
+  }
+
+  /** SQL statements that turn `prev` into `cur`. Renames become drop + add unless interactive. */
+  private async diff(prev: Snapshot, cur: Snapshot, interactive: boolean): Promise<string[]> {
+    const { dialect } = this.options
+    if (interactive) return dialect.migration(prev, cur)
+    const union = unionSnapshot(prev, cur)
+    return [...(await dialect.migration(prev, union)), ...(await dialect.migration(union, cur))]
   }
 
   async ensureTable() {
-    await this.client.execute(
-      `CREATE TABLE IF NOT EXISTS \`${this.options.table}\` (
-        \`id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-        \`name\` text NOT NULL UNIQUE,
-        \`hash\` text,
-        \`snapshot\` text,
-        \`applied_at\` text NOT NULL
-      )`,
-    )
+    await this.runner.query(this.options.dialect.migrationsTableSQL(this.options.table))
+  }
+
+  private record(name: string, hash: string, snapshot: Snapshot, upsert: boolean): Statement {
+    const p = (n: number) => this.options.dialect.param(n)
+    const table = this.q(this.options.table)
+    const conflict = upsert
+      ? ' ON CONFLICT(name) DO UPDATE SET hash = excluded.hash, snapshot = excluded.snapshot, applied_at = excluded.applied_at'
+      : ''
+    return {
+      sql: `INSERT INTO ${table} (name, hash, snapshot, applied_at) VALUES (${p(1)}, ${p(2)}, ${p(3)}, ${p(4)})${conflict}`,
+      params: [name, hash, JSON.stringify(snapshot), new Date().toISOString()],
+    }
   }
 
   private async applied(): Promise<MigrationRow[]> {
-    const result = await this.client.execute(
-      `SELECT name, hash, snapshot FROM \`${this.options.table}\` ORDER BY id`,
+    const rows = await this.runner.query(
+      `SELECT name, hash, snapshot FROM ${this.q(this.options.table)} ORDER BY id`,
     )
-    return result.rows.map((r) => ({
+    return rows.map((r) => ({
       name: String(r.name),
       hash: r.hash === null ? null : String(r.hash),
       snapshot: r.snapshot === null ? null : String(r.snapshot),
@@ -117,7 +120,7 @@ export class Migrator {
   /** The schema the database is currently in, according to the migrations table. */
   private async currentSnapshot(rows: MigrationRow[]): Promise<Snapshot> {
     const last = [...rows].reverse().find((r) => r.snapshot !== null)
-    return last?.snapshot ? JSON.parse(last.snapshot) : snapshotOf(null)
+    return last?.snapshot ? JSON.parse(last.snapshot) : this.snapshotOf(null)
   }
 
   /** Development: bring the database in line with the config without migration files. */
@@ -128,18 +131,15 @@ export class Migrator {
     if (devRow?.hash === this.options.schema.hash) return
 
     const prev = await this.currentSnapshot(devRow ? [devRow] : rows)
-    const cur = await snapshotOf(this.options.schema)
-    const statements = await diff(prev, cur, false)
-
+    const cur = await this.snapshotOf(this.options.schema)
+    const statements = await this.diff(prev, cur, false)
     if (statements.some((s) => DESTRUCTIVE.test(s))) {
       this.options.logger.warn('Schema push drops tables or columns; data in them is lost.')
     }
-    const record: InStatement = {
-      sql: `INSERT INTO \`${this.options.table}\` (name, hash, snapshot, applied_at) VALUES (?, ?, ?, ?)
-            ON CONFLICT(name) DO UPDATE SET hash = excluded.hash, snapshot = excluded.snapshot, applied_at = excluded.applied_at`,
-      args: [DEV_PUSH, this.options.schema.hash, JSON.stringify(cur), new Date().toISOString()],
-    }
-    await this.client.batch([...statements, record], 'write')
+    await this.runner.transaction([
+      ...statements.map((sql) => ({ sql })),
+      this.record(DEV_PUSH, this.options.schema.hash, cur, true),
+    ])
     if (statements.length > 0)
       this.options.logger.info(`Schema pushed (${statements.length} statements).`)
   }
@@ -148,8 +148,7 @@ export class Migrator {
   async verify() {
     await this.ensureTable()
     const files = await this.files()
-    const rows = await this.applied()
-    const appliedNames = new Set(rows.map((r) => r.name))
+    const appliedNames = new Set((await this.applied()).map((r) => r.name))
 
     const last = files.at(-1)
     if (!last) {
@@ -173,9 +172,9 @@ export class Migrator {
   async create(name: string): Promise<{ name: string; file: string; statements: string[] } | null> {
     const files = await this.files()
     const last = files.at(-1)
-    const prev = last ? last.snapshot : await snapshotOf(null)
-    const cur = await snapshotOf(this.options.schema)
-    const statements = await diff(prev, cur, this.options.interactive)
+    const prev = last ? last.snapshot : await this.snapshotOf(null)
+    const cur = await this.snapshotOf(this.options.schema)
+    const statements = await this.diff(prev, cur, this.options.interactive)
     if (statements.length === 0 && last?.hash === this.options.schema.hash) return null
 
     const safeName =
@@ -186,11 +185,11 @@ export class Migrator {
     const fullName = `${timestamp()}_${safeName}`
     await mkdir(this.options.dir, { recursive: true })
     const file = join(this.options.dir, `${fullName}.sql`)
-    const header = `-- Easy CMS migration ${fullName}\n-- Generated from the config; review before deploying.\n`
+    const header = `-- Easy CMS migration ${fullName} (${this.options.dialect.name})\n-- Generated from the config; review before deploying.\n`
     await writeFile(file, `${header}${statements.join(`\n${BREAKPOINT}\n`)}\n`)
     await writeFile(
       join(this.options.dir, `${fullName}.json`),
-      `${JSON.stringify({ hash: this.options.schema.hash, snapshot: cur }, null, 2)}\n`,
+      `${JSON.stringify({ dialect: this.options.dialect.name, hash: this.options.schema.hash, snapshot: cur }, null, 2)}\n`,
     )
     return { name: fullName, file, statements }
   }
@@ -200,25 +199,19 @@ export class Migrator {
     const rows = await this.applied()
     if (rows.some((r) => r.name === DEV_PUSH)) {
       throw new SchemaError(
-        'This database was set up by development schema push, so migrations cannot be applied to it.\n    → run migrations against a fresh database, or delete the database file in development',
+        'This database was set up by development schema push, so migrations cannot be applied to it.\n    → run migrations against a fresh database, or reset the development database',
       )
     }
     const appliedNames = new Set(rows.map((r) => r.name))
     const pending = (await this.files()).filter((f) => !appliedNames.has(f.name))
 
     for (const migration of pending) {
-      const record: InStatement = {
-        sql: `INSERT INTO \`${this.options.table}\` (name, hash, snapshot, applied_at) VALUES (?, ?, ?, ?)`,
-        args: [
-          migration.name,
-          migration.hash,
-          JSON.stringify(migration.snapshot),
-          new Date().toISOString(),
-        ],
-      }
       try {
-        // One batch = one transaction: a failing migration is rolled back and not recorded.
-        await this.client.batch([...migration.statements, record], 'write')
+        // One transaction per migration: a failure is rolled back and not recorded.
+        await this.runner.transaction([
+          ...migration.statements.map((sql) => ({ sql })),
+          this.record(migration.name, migration.hash, migration.snapshot, false),
+        ])
       } catch (error) {
         throw new SchemaError(
           `Migration ${migration.name} failed and was rolled back: ${(error as Error).message}`,
@@ -250,6 +243,11 @@ export class Migrator {
       names.map(async (name) => {
         const sqlText = await readFile(join(this.options.dir, `${name}.sql`), 'utf8')
         const meta = JSON.parse(await readFile(join(this.options.dir, `${name}.json`), 'utf8'))
+        if (meta.dialect && meta.dialect !== this.options.dialect.name) {
+          throw new SchemaError(
+            `Migration ${name} was created for ${meta.dialect}, but the database is ${this.options.dialect.name}.`,
+          )
+        }
         const statements = sqlText
           .split(BREAKPOINT)
           .map((s) =>

@@ -28,7 +28,7 @@ beforeAll(async () => {
       author: author.id,
     },
     { title: 'Gamma 100%', views: 30, tags: [], links: [{ label: 'y', tags: ['y'] }] },
-    { title: 'delta', status: 'published', publishedAt: '2026-03-01T00:00:00Z' },
+    { title: 'Zeta', status: 'published', publishedAt: '2026-03-01T00:00:00Z' },
   ] as const
   for (const post of posts) {
     const created = await cms.create('posts', post)
@@ -44,21 +44,21 @@ const titles = async (where: Where, sort: string | string[] = 'title') =>
 describe('where operators (FR-LAPI-02)', () => {
   it('equals / not_equals, including null', async () => {
     expect(await titles({ views: { equals: 20 } })).toEqual(['Beta'])
-    expect(await titles({ views: { not_equals: 20 } })).toEqual(['Alpha', 'Gamma 100%', 'delta'])
+    expect(await titles({ views: { not_equals: 20 } })).toEqual(['Alpha', 'Gamma 100%', 'Zeta'])
     expect(await titles({ publishedAt: { equals: null } })).toEqual(['Alpha', 'Gamma 100%'])
-    expect(await titles({ publishedAt: { not_equals: null } })).toEqual(['Beta', 'delta'])
+    expect(await titles({ publishedAt: { not_equals: null } })).toEqual(['Beta', 'Zeta'])
   })
 
   it('in / not_in', async () => {
     expect(await titles({ views: { in: [10, 30] } })).toEqual(['Alpha', 'Gamma 100%'])
-    expect(await titles({ views: { not_in: [10, 30] } })).toEqual(['Beta', 'delta'])
+    expect(await titles({ views: { not_in: [10, 30] } })).toEqual(['Beta', 'Zeta'])
     expect(await titles({ views: { in: [] } })).toEqual([])
   })
 
   it('comparisons on numbers and dates', async () => {
     expect(await titles({ views: { gt: 10, lte: 30 } })).toEqual(['Beta', 'Gamma 100%'])
     expect(await titles({ publishedAt: { gte: new Date('2026-02-15') } as never })).toEqual([
-      'delta',
+      'Zeta',
     ])
   })
 
@@ -76,15 +76,15 @@ describe('where operators (FR-LAPI-02)', () => {
   it('booleans, selects, status and system fields', async () => {
     expect(await titles({ featured: { equals: true } })).toEqual(['Alpha'])
     expect(await titles({ kind: { equals: 'news' } })).toEqual(['Alpha'])
-    expect(await titles({ status: { equals: 'published' } })).toEqual(['delta'])
+    expect(await titles({ status: { equals: 'published' } })).toEqual(['Zeta'])
     expect(await titles({ id: { equals: String(ids.Beta) } })).toEqual(['Beta'])
     expect(await titles({ author: { equals: String(ids.author) } })).toEqual(['Beta'])
   })
 
   it('and / or', async () => {
     expect(
-      await titles({ or: [{ views: { equals: 10 } }, { title: { equals: 'delta' } }] }),
-    ).toEqual(['Alpha', 'delta'])
+      await titles({ or: [{ views: { equals: 10 } }, { title: { equals: 'Zeta' } }] }),
+    ).toEqual(['Alpha', 'Zeta'])
     expect(
       await titles({
         and: [{ views: { gte: 10 } }, { views: { lte: 20 } }],
@@ -102,8 +102,8 @@ describe('nested paths', () => {
   it('hasMany values', async () => {
     expect(await titles({ tags: { equals: 'a' } })).toEqual(['Alpha', 'Beta'])
     expect(await titles({ tags: { in: ['b', 'c'] } })).toEqual(['Beta'])
-    expect(await titles({ tags: { not_equals: 'a' } })).toEqual(['Gamma 100%', 'delta'])
-    expect(await titles({ tags: { exists: false } })).toEqual(['Gamma 100%', 'delta'])
+    expect(await titles({ tags: { not_equals: 'a' } })).toEqual(['Gamma 100%', 'Zeta'])
+    expect(await titles({ tags: { exists: false } })).toEqual(['Gamma 100%', 'Zeta'])
   })
 
   it('array row fields, including values inside rows', async () => {
@@ -136,7 +136,7 @@ describe('sort and pagination', () => {
     expect(
       (await cms.find('posts', { draft: true, sort: '-views', limit: 2 })).docs.map((d) => d.title),
     ).toEqual(['Gamma 100%', 'Beta'])
-    expect((await cms.find('posts', { draft: true, limit: 1 })).docs[0]?.title).toBe('delta')
+    expect((await cms.find('posts', { draft: true, limit: 1 })).docs[0]?.title).toBe('Zeta')
     expect(
       (await cms.find('posts', { draft: true, sort: 'seo.title', limit: 0 })).docs,
     ).toHaveLength(4)
@@ -153,7 +153,7 @@ describe('sort and pagination', () => {
       hasNextPage: false,
       hasPrevPage: true,
     })
-    expect(page2.docs.map((d) => d.title)).toEqual(['delta'])
+    expect(page2.docs.map((d) => d.title)).toEqual(['Zeta'])
 
     const all = await cms.find('posts', { draft: true, limit: 0 })
     expect(all).toMatchObject({ totalDocs: 4, totalPages: 1, hasNextPage: false })

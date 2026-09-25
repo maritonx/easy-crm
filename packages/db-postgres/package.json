@@ -1,7 +1,7 @@
 {
-  "name": "@easy-cms/db-sqlite",
+  "name": "@easy-cms/db-postgres",
   "version": "0.0.0",
-  "description": "SQLite / libSQL database adapter for Easy CMS",
+  "description": "PostgreSQL database adapter for Easy CMS",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -25,16 +25,22 @@
   },
   "dependencies": {
     "@easy-cms/drizzle": "workspace:^",
-    "@libsql/client": "^0.18.0",
     "drizzle-kit": "0.31.11",
-    "drizzle-orm": "0.45.3"
+    "drizzle-orm": "0.45.3",
+    "postgres": "^3.4.9"
   },
   "peerDependencies": {
-    "@easy-cms/core": "workspace:^"
+    "@easy-cms/core": "workspace:^",
+    "@electric-sql/pglite": ">=0.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@electric-sql/pglite": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@easy-cms/core": "workspace:^",
-    "sharp": "^0.35.4"
+    "@electric-sql/pglite": "^0.5.8"
   },
   "publishConfig": {
     "access": "public",
@@ -43,13 +49,13 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/easy-cms/easy-cms.git",
-    "directory": "packages/db-sqlite"
+    "directory": "packages/db-postgres"
   },
   "keywords": [
     "easy-cms",
-    "sqlite",
-    "libsql",
-    "turso",
+    "postgres",
+    "postgresql",
+    "pglite",
     "drizzle"
   ]
 }

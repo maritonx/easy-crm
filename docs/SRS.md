@@ -264,6 +264,8 @@ Host app ─► Local API ┘
 |---|---|---|
 | NFR-PERF-01 | Local API `find` (limit 10, depth 1) บน Postgres ที่มีข้อมูล 10,000 รายการ ต้องตอบภายใน p95 < 50 ms (ไม่รวมเวลาเครือข่าย) | SHOULD |
 | NFR-PERF-02 | REST `GET /:collection` ต้องตอบภายใน p95 < 150 ms ภายใต้เงื่อนไขเดียวกัน | SHOULD |
+
+> ผลวัดจริง (M6, `pnpm --filter easy-cms-integration-tests bench`): Postgres 17 ได้ Local API p95 2.7 ms และ REST p95 4.3 ms, PGlite ได้ 3.5 / 4.0 ms, SQLite ได้ 0.4 / 0.4 ms
 | NFR-PERF-03 | Bundle ของหน้า Admin (gzip) โหลดครั้งแรกต้อง < 500 KB โดย Rich text editor ต้อง lazy-load | SHOULD |
 | NFR-PERF-04 | การเพิ่ม Easy CMS ต้องทำให้เวลา cold start ของ host app เพิ่มขึ้นไม่เกิน 300 ms | SHOULD |
 
@@ -407,3 +409,4 @@ v0.1 ผ่านการตรวจรับเมื่อครบทุก
 | 1.1 | 2026-09-25 | เปลี่ยน Node ขั้นต่ำเป็น 22.12 เพราะ Node 20 EOL แล้ว |
 | 1.2 | 2026-09-25 | M2: เพิ่ม FR-REST-05 (init, first-register), FR-REST-07 (Bearer), FR-AUTH-10 (roles, admin คนสุดท้าย) |
 | 1.3 | 2026-09-25 | M5: FR-REST-08 (อัปโหลด/ไฟล์), FR-CFG-07 (`routes.api`, `serverURL`), ระบุว่า drafts ใน v0.1 ไม่มี version แยก |
+| 1.4 | 2026-09-25 | M6: ผลวัด NFR-PERF-01/02 บน Postgres 17 (Local API p95 2.7 ms, REST p95 4.3 ms), Next.js adapter ใช้ `getEasyCMS(config)` |

@@ -82,3 +82,12 @@ describe('renderShell', () => {
     expect(html).toContain('<base href="/a&quot;b/">')
   })
 })
+
+describe('without the trailing slash redirect', () => {
+  it('serves the shell at the bare base path', async () => {
+    const bare = createAdminHandler({ appDir, basePath: '/cms', trailingSlashRedirect: false })
+    const res = await bare(new Request('http://x.test/cms'))
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('<base href="/cms/">')
+  })
+})

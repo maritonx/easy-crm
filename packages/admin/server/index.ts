@@ -1,5 +1,5 @@
 import { readFile, stat } from 'node:fs/promises'
-import { extname, join, normalize, sep } from 'node:path'
+import { dirname, extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export interface AdminHandlerOptions {
@@ -11,12 +11,20 @@ export interface AdminHandlerOptions {
   readonly locale?: 'en' | 'th'
   /** Directory with the built app. Defaults to the one shipped in this package. */
   readonly appDir?: string
+  /**
+   * Redirect `/admin` to `/admin/`. Default true. Turn off for frameworks that strip trailing
+   * slashes (Next.js); the app works at either URL because of its `<base href>`.
+   */
+  readonly trailingSlashRedirect?: boolean
 }
 
 export type AdminHandler = (request: Request) => Promise<Response>
 
-/** The built admin app shipped with this package. */
-export const APP_DIR = fileURLToPath(new URL('../app', import.meta.url))
+/**
+ * The built admin app shipped with this package. Computed from this file's path rather than
+ * `new URL(..., import.meta.url)`, which bundlers rewrite into asset imports.
+ */
+export const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'app')
 
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -93,11 +101,11 @@ export function createAdminHandler(options: AdminHandlerOptions = {}): AdminHand
       headers.set('allow', 'GET, HEAD')
       return new Response('Method not allowed', { status: 405, headers })
     }
-    if (url.pathname === basePath) {
+    if (url.pathname === basePath && options.trailingSlashRedirect !== false) {
       headers.set('location', `${basePath}/${url.search}`)
       return new Response(null, { status: 308, headers })
     }
-    if (!url.pathname.startsWith(`${basePath}/`))
+    if (url.pathname !== basePath && !url.pathname.startsWith(`${basePath}/`))
       return new Response('Not found', { status: 404, headers })
 
     let relative: string

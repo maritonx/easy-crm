@@ -1,20 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { CollectionConfig, Field, ResolvedConfig } from '@easy-cms/core'
 import { ConfigError } from '@easy-cms/core'
-import {
-  type AnySQLiteColumn,
-  index,
-  integer,
-  real,
-  type SQLiteColumnBuilderBase,
-  type SQLiteTableWithColumns,
-  sqliteTable,
-  text,
-  uniqueIndex,
-} from 'drizzle-orm/sqlite-core'
-
-// biome-ignore lint/suspicious/noExplicitAny: tables are built at runtime from the config
-export type AnyTable = SQLiteTableWithColumns<any>
+import type { AnyColumn, AnyTable, ColumnBuilder, Dialect } from './dialect.js'
 
 /** A scalar field stored as a column of this table. */
 export interface ColumnModel {
@@ -39,7 +26,7 @@ export interface TableModel {
   readonly fields: readonly Field[]
   readonly columns: readonly ColumnModel[]
   readonly children: readonly ChildModel[]
-  /** The column holding the value, for `values` tables. */
+  /** The field whose values the `value` column holds, for `values` tables. */
   readonly valueField?: Field
 }
 
@@ -68,12 +55,12 @@ export const snake = (name: string) =>
     .replace(/[^A-Za-z0-9]+/g, '_')
     .toLowerCase()
 
-type ColumnKind = 'text' | 'real' | 'integer' | 'boolean' | 'json'
+type ColumnKind = 'text' | 'number' | 'integer' | 'boolean' | 'json'
 
 function columnKind(field: Field): ColumnKind {
   switch (field.type) {
     case 'number':
-      return 'real'
+      return 'number'
     case 'boolean':
       return 'boolean'
     case 'json':
@@ -87,32 +74,20 @@ function columnKind(field: Field): ColumnKind {
   }
 }
 
-function makeColumn(name: string, kind: ColumnKind): SQLiteColumnBuilderBase {
-  switch (kind) {
-    case 'real':
-      return real(name)
-    case 'integer':
-      return integer(name)
-    case 'boolean':
-      return integer(name, { mode: 'boolean' })
-    case 'json':
-      return text(name, { mode: 'json' })
-    case 'text':
-      return text(name)
-  }
-}
-
 interface Builder {
+  readonly dialect: Dialect
   readonly prefix: string
   readonly tableNames: Set<string>
   readonly description: unknown[]
 }
 
 /** Builds Drizzle tables for every collection and global in the config. */
-export function buildSchema(config: ResolvedConfig, prefix: string): SchemaModel {
+export function buildSchema(config: ResolvedConfig, prefix: string, dialect: Dialect): SchemaModel {
   const builder: Builder = {
+    dialect,
     prefix,
     tableNames: new Set([migrationsTableName(prefix)]),
+    // The hash covers the logical schema only, so it stays stable across releases for the same config.
     description: [],
   }
   const collections = new Map<string, CollectionModel>()
@@ -133,12 +108,16 @@ export function buildSchema(config: ResolvedConfig, prefix: string): SchemaModel
   }
 
   const globalsName = claimName(builder, `${prefix}globals`)
-  const globals = sqliteTable(globalsName, {
-    slug: text('slug').primaryKey(),
-    data: text('data', { mode: 'json' }).notNull(),
-    status: text('status'),
-    updated_at: text('updated_at').notNull(),
-  })
+  const globals = dialect.table(
+    globalsName,
+    {
+      slug: dialect.text('slug').primaryKey(),
+      data: dialect.json('data').notNull(),
+      status: dialect.text('status'),
+      updated_at: dialect.text('updated_at').notNull(),
+    },
+    () => [],
+  )
   tables[globalsName] = globals
   builder.description.push(['globals', globalsName])
 
@@ -168,6 +147,21 @@ function claimName(builder: Builder, name: string): string {
   return name
 }
 
+function makeColumn(dialect: Dialect, name: string, kind: ColumnKind): ColumnBuilder {
+  switch (kind) {
+    case 'number':
+      return dialect.number(name)
+    case 'integer':
+      return dialect.integer(name)
+    case 'boolean':
+      return dialect.boolean(name)
+    case 'json':
+      return dialect.json(name)
+    case 'text':
+      return dialect.text(name)
+  }
+}
+
 function buildTable(
   builder: Builder,
   name: string,
@@ -175,14 +169,15 @@ function buildTable(
   fields: readonly Field[],
   options: { drafts?: boolean; parentIdKind?: 'integer' | 'text'; valueField?: Field },
 ): TableModel {
+  const { dialect } = builder
   claimName(builder, name)
-  const columns: Record<string, SQLiteColumnBuilderBase> = {}
+  const columns: Record<string, ColumnBuilder> = {}
   const described: unknown[] = []
   const columnModels: ColumnModel[] = []
   const children: ChildModel[] = []
   const indexes: { column: string; unique: boolean }[] = []
 
-  const add = (column: string, builderColumn: SQLiteColumnBuilderBase, desc: unknown) => {
+  const add = (column: string, builderColumn: ColumnBuilder, desc: unknown) => {
     if (Object.hasOwn(columns, column)) {
       throw new ConfigError([
         {
@@ -197,30 +192,30 @@ function buildTable(
   }
 
   if (kind === 'root') {
-    add('id', integer('id').primaryKey({ autoIncrement: true }), 'id:int')
-    add('created_at', text('created_at').notNull(), 'text!')
-    add('updated_at', text('updated_at').notNull(), 'text!')
-    if (options.drafts) add('status', text('status').notNull().default('draft'), 'status')
+    add('id', dialect.serial('id'), 'id:int')
+    add('created_at', dialect.text('created_at').notNull(), 'text!')
+    add('updated_at', dialect.text('updated_at').notNull(), 'text!')
+    if (options.drafts) add('status', dialect.text('status').notNull().default('draft'), 'status')
     indexes.push({ column: 'created_at', unique: false })
   } else {
     const parentKind = options.parentIdKind ?? 'integer'
     add(
       'id',
-      kind === 'array'
-        ? text('id').primaryKey()
-        : integer('id').primaryKey({ autoIncrement: true }),
+      kind === 'array' ? dialect.text('id').primaryKey() : dialect.serial('id'),
       `id:${kind}`,
     )
     add(
       '_parent_id',
-      parentKind === 'text' ? text('_parent_id').notNull() : integer('_parent_id').notNull(),
+      parentKind === 'text'
+        ? dialect.text('_parent_id').notNull()
+        : dialect.integer('_parent_id').notNull(),
       parentKind,
     )
-    add('_order', integer('_order').notNull(), 'int!')
+    add('_order', dialect.integer('_order').notNull(), 'int!')
     indexes.push({ column: '_parent_id', unique: false })
     if (kind === 'values' && options.valueField) {
       const valueKind = columnKind(options.valueField)
-      add('value', makeColumn('value', valueKind), valueKind)
+      add('value', makeColumn(dialect, 'value', valueKind), valueKind)
       indexes.push({ column: 'value', unique: false })
     }
   }
@@ -247,7 +242,7 @@ function buildTable(
         described.push([base, 'values', child.name])
       } else {
         const kindOfColumn = columnKind(field)
-        add(base, makeColumn(base, kindOfColumn), kindOfColumn)
+        add(base, makeColumn(dialect, base, kindOfColumn), kindOfColumn)
         columnModels.push({ path: fieldPath, field, column: base })
         if (topLevel && kind === 'root' && (field.unique || field.type === 'slug')) {
           indexes.push({ column: base, unique: true })
@@ -264,14 +259,14 @@ function buildTable(
   }
   walk(fields, [], true)
 
-  const table = sqliteTable(name, columns, (t: Record<string, AnySQLiteColumn>) =>
+  const table = dialect.table(name, columns, (t: Record<string, AnyColumn>) =>
     indexes.map(({ column, unique }) => {
-      const col = t[column] as AnySQLiteColumn
+      const col = t[column]
       return unique
-        ? uniqueIndex(`${name}_${column}_unique`).on(col)
-        : index(`${name}_${column}_idx`).on(col)
+        ? dialect.uniqueIndex(`${name}_${column}_unique`).on(col)
+        : dialect.index(`${name}_${column}_idx`).on(col)
     }),
-  ) as AnyTable
+  )
 
   builder.description.push([name, kind, described, indexes])
   const model: TableModel = { name, kind, table, fields, columns: columnModels, children }

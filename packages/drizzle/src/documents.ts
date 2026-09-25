@@ -1,15 +1,14 @@
 import type { ID, RawDocument } from '@easy-cms/core'
 import { asc, eq, inArray } from 'drizzle-orm'
-import type { LibSQLDatabase } from 'drizzle-orm/libsql'
-import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import type { AnyColumn, DrizzleDb } from './dialect.js'
 import type { ChildModel, TableModel } from './schema.js'
 
 type Data = Record<string, unknown>
 type Row = Record<string, unknown>
 /** The database or an open transaction. */
-type Executor = LibSQLDatabase | Parameters<Parameters<LibSQLDatabase['transaction']>[0]>[0]
+type Executor = DrizzleDb
 
-const col = (model: TableModel, name: string) => model.table[name] as AnySQLiteColumn
+const col = (model: TableModel, name: string) => model.table[name] as AnyColumn
 
 function getAt(data: Data, path: readonly string[]): unknown {
   let current: unknown = data

@@ -20,8 +20,7 @@ import {
   type SQL,
   sql,
 } from 'drizzle-orm'
-import type { LibSQLDatabase } from 'drizzle-orm/libsql'
-import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import type { AnyColumn, Dialect, DrizzleDb } from './dialect.js'
 import type { ChildModel, TableModel } from './schema.js'
 
 const OPERATORS = new Set([
@@ -44,10 +43,13 @@ const SYSTEM_COLUMNS: Record<string, string> = {
 }
 
 type Target =
-  | { kind: 'column'; column: AnySQLiteColumn; field: Field | undefined }
+  | { kind: 'column'; column: AnyColumn; field: Field | undefined }
   | { kind: 'child'; child: ChildModel; rest: string[] }
 
-const col = (model: TableModel, name: string) => model.table[name] as AnySQLiteColumn
+const col = (model: TableModel, name: string) => model.table[name] as AnyColumn
+
+const ID_FIELD: Field = { name: 'id', type: 'relationship', to: '' }
+const LIKE_TYPES = new Set(['text', 'textarea', 'email', 'slug', 'select'])
 
 function resolvePath(model: TableModel, segments: string[], drafts: boolean): Target {
   const [first] = segments
@@ -56,7 +58,9 @@ function resolvePath(model: TableModel, segments: string[], drafts: boolean): Ta
   if (segments.length === 1) {
     const system = SYSTEM_COLUMNS[first]
     if (system && (model.kind === 'root' || first === 'id')) {
-      return { kind: 'column', column: col(model, system), field: undefined }
+      // Ids of root documents are integers: coerce like relationship values.
+      const field = first === 'id' && model.kind !== 'array' ? ID_FIELD : undefined
+      return { kind: 'column', column: col(model, system), field }
     }
     if (first === 'status' && drafts && model.kind === 'root') {
       return { kind: 'column', column: col(model, 'status'), field: undefined }
@@ -105,7 +109,8 @@ function coerce(field: Field | undefined, value: unknown): unknown {
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`)
 
 function operatorSQL(
-  column: AnySQLiteColumn,
+  dialect: Dialect,
+  column: AnyColumn,
   field: Field | undefined,
   op: string,
   raw: unknown,
@@ -141,7 +146,9 @@ function operatorSQL(
       return lte(column, value)
     case 'like':
       if (typeof raw !== 'string') throw new QueryError(`"${path}.like" must be a string`)
-      return sql`${column} LIKE ${`%${escapeLike(raw)}%`} ESCAPE '\\'`
+      if (field && !LIKE_TYPES.has(field.type))
+        throw new QueryError(`"like" works on text fields, not "${path}"`)
+      return dialect.like(column, `%${escapeLike(raw)}%`)
     case 'exists':
       return raw === false ? isNull(column) : isNotNull(column)
     default:
@@ -151,7 +158,8 @@ function operatorSQL(
 
 export class WhereBuilder {
   constructor(
-    private readonly db: LibSQLDatabase,
+    private readonly db: DrizzleDb,
+    private readonly dialect: Dialect,
     private readonly drafts: boolean,
   ) {}
 
@@ -186,7 +194,8 @@ export class WhereBuilder {
 
     const parts = entries.map(([op, value]) => {
       if (!OPERATORS.has(op)) throw new QueryError(`Unknown operator "${op}" on "${path}"`)
-      if (target.kind === 'column') return operatorSQL(target.column, target.field, op, value, path)
+      if (target.kind === 'column')
+        return operatorSQL(this.dialect, target.column, target.field, op, value, path)
       return this.child(model, target.child, target.rest, op, value, path)
     })
     return (parts.length === 1 ? parts[0] : and(...parts)) as SQL
@@ -216,10 +225,14 @@ export class WhereBuilder {
       const valueColumn = col(table, 'value')
       if (op === 'exists') return value === false ? not(subquery(undefined)) : subquery(undefined)
       if (op === 'not_equals')
-        return not(subquery(operatorSQL(valueColumn, table.valueField, 'equals', value, path)))
+        return not(
+          subquery(operatorSQL(this.dialect, valueColumn, table.valueField, 'equals', value, path)),
+        )
       if (op === 'not_in')
-        return not(subquery(operatorSQL(valueColumn, table.valueField, 'in', value, path)))
-      return subquery(operatorSQL(valueColumn, table.valueField, op, value, path))
+        return not(
+          subquery(operatorSQL(this.dialect, valueColumn, table.valueField, 'in', value, path)),
+        )
+      return subquery(operatorSQL(this.dialect, valueColumn, table.valueField, op, value, path))
     }
 
     if (rest.length === 0) {

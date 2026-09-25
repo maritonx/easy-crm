@@ -1,0 +1,19 @@
+{
+  "name": "easy-cms-integration-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "bench": "node bench.ts"
+  },
+  "devDependencies": {
+    "@easy-cms/core": "workspace:^",
+    "@easy-cms/db-postgres": "workspace:^",
+    "@easy-cms/db-sqlite": "workspace:^",
+    "@electric-sql/pglite": "^0.5.8",
+    "@libsql/client": "^0.18.0",
+    "postgres": "^3.4.9",
+    "sharp": "^0.35.4"
+  }
+}

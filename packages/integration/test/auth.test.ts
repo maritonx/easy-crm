@@ -5,7 +5,7 @@ import {
   ValidationError,
 } from '@easy-cms/core'
 import { describe, expect, it } from 'vitest'
-import { db, open, rawClient, SECRET } from './helpers.js'
+import { db, open, rawQuery, SECRET, table } from './helpers.js'
 
 const config = defineConfig({
   secret: SECRET,
@@ -51,9 +51,7 @@ describe('users collection (FR-CFG-06, FR-AUTH-02/06)', () => {
 
   it('stores a scrypt hash, never the password', async () => {
     const { cms } = await withUser()
-    const client = rawClient(cms.cwd)
-    const { rows } = await client.execute('SELECT password_hash FROM ecms_users')
-    client.close()
+    const rows = await rawQuery(cms.cwd, `SELECT password_hash FROM ${table(cms.cwd, 'users')}`)
     expect(String(rows[0]?.password_hash)).toMatch(/^scrypt\$131072\$8\$1\$/)
     expect(String(rows[0]?.password_hash)).not.toContain(PASSWORD)
     await cms.destroy()
@@ -142,9 +140,7 @@ describe('login / verify / logout (FR-AUTH-01/03/04)', () => {
   it('stores only a hash of the session token', async () => {
     const { cms } = await withUser()
     const session = await cms.auth.login({ email: 'ann@example.com', password: PASSWORD })
-    const client = rawClient(cms.cwd)
-    const { rows } = await client.execute('SELECT token_hash FROM ecms_sessions')
-    client.close()
+    const rows = await rawQuery(cms.cwd, `SELECT token_hash FROM ${table(cms.cwd, 'sessions')}`)
     expect(rows).toHaveLength(1)
     expect(session.token).not.toContain(String(rows[0]?.token_hash))
     await cms.destroy()

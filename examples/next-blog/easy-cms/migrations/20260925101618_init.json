@@ -1,0 +1,744 @@
+{
+  "dialect": "postgres",
+  "hash": "daa8cc7fb4811f56",
+  "snapshot": {
+    "version": "7",
+    "dialect": "postgresql",
+    "tables": {
+      "public.ecms_users": {
+        "name": "ecms_users",
+        "schema": "",
+        "columns": {
+          "id": {
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "created_at": {
+            "name": "created_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "updated_at": {
+            "name": "updated_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "email": {
+            "name": "email",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "name": {
+            "name": "name",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "role": {
+            "name": "role",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "active": {
+            "name": "active",
+            "type": "boolean",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "password_hash": {
+            "name": "password_hash",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          }
+        },
+        "indexes": {
+          "ecms_users_created_at_idx": {
+            "name": "ecms_users_created_at_idx",
+            "columns": [
+              {
+                "expression": "created_at",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_users_email_unique": {
+            "name": "ecms_users_email_unique",
+            "columns": [
+              {
+                "expression": "email",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": true,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          }
+        },
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      },
+      "public.ecms_media": {
+        "name": "ecms_media",
+        "schema": "",
+        "columns": {
+          "id": {
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "created_at": {
+            "name": "created_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "updated_at": {
+            "name": "updated_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "filename": {
+            "name": "filename",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "original_name": {
+            "name": "original_name",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "mime_type": {
+            "name": "mime_type",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "filesize": {
+            "name": "filesize",
+            "type": "double precision",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "width": {
+            "name": "width",
+            "type": "double precision",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "height": {
+            "name": "height",
+            "type": "double precision",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "sizes": {
+            "name": "sizes",
+            "type": "jsonb",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "alt": {
+            "name": "alt",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          }
+        },
+        "indexes": {
+          "ecms_media_created_at_idx": {
+            "name": "ecms_media_created_at_idx",
+            "columns": [
+              {
+                "expression": "created_at",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_media_filename_unique": {
+            "name": "ecms_media_filename_unique",
+            "columns": [
+              {
+                "expression": "filename",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": true,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          }
+        },
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      },
+      "public.ecms_categories": {
+        "name": "ecms_categories",
+        "schema": "",
+        "columns": {
+          "id": {
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "created_at": {
+            "name": "created_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "updated_at": {
+            "name": "updated_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "name": {
+            "name": "name",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "slug": {
+            "name": "slug",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          }
+        },
+        "indexes": {
+          "ecms_categories_created_at_idx": {
+            "name": "ecms_categories_created_at_idx",
+            "columns": [
+              {
+                "expression": "created_at",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_categories_slug_unique": {
+            "name": "ecms_categories_slug_unique",
+            "columns": [
+              {
+                "expression": "slug",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": true,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          }
+        },
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      },
+      "public.ecms_posts": {
+        "name": "ecms_posts",
+        "schema": "",
+        "columns": {
+          "id": {
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "created_at": {
+            "name": "created_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "updated_at": {
+            "name": "updated_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "status": {
+            "name": "status",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true,
+            "default": "'draft'"
+          },
+          "title": {
+            "name": "title",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "slug": {
+            "name": "slug",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "excerpt": {
+            "name": "excerpt",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "cover": {
+            "name": "cover",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "body": {
+            "name": "body",
+            "type": "jsonb",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "category": {
+            "name": "category",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "author": {
+            "name": "author",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "published_at": {
+            "name": "published_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          }
+        },
+        "indexes": {
+          "ecms_posts_created_at_idx": {
+            "name": "ecms_posts_created_at_idx",
+            "columns": [
+              {
+                "expression": "created_at",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_posts_slug_unique": {
+            "name": "ecms_posts_slug_unique",
+            "columns": [
+              {
+                "expression": "slug",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": true,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_posts_cover_idx": {
+            "name": "ecms_posts_cover_idx",
+            "columns": [
+              {
+                "expression": "cover",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_posts_category_idx": {
+            "name": "ecms_posts_category_idx",
+            "columns": [
+              {
+                "expression": "category",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_posts_author_idx": {
+            "name": "ecms_posts_author_idx",
+            "columns": [
+              {
+                "expression": "author",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          }
+        },
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      },
+      "public.ecms_posts__tags": {
+        "name": "ecms_posts__tags",
+        "schema": "",
+        "columns": {
+          "id": {
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "_parent_id": {
+            "name": "_parent_id",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "_order": {
+            "name": "_order",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "value": {
+            "name": "value",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          }
+        },
+        "indexes": {
+          "ecms_posts__tags__parent_id_idx": {
+            "name": "ecms_posts__tags__parent_id_idx",
+            "columns": [
+              {
+                "expression": "_parent_id",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_posts__tags_value_idx": {
+            "name": "ecms_posts__tags_value_idx",
+            "columns": [
+              {
+                "expression": "value",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          }
+        },
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      },
+      "public.ecms_sessions": {
+        "name": "ecms_sessions",
+        "schema": "",
+        "columns": {
+          "id": {
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "created_at": {
+            "name": "created_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "updated_at": {
+            "name": "updated_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "token_hash": {
+            "name": "token_hash",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "user": {
+            "name": "user",
+            "type": "integer",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "expires_at": {
+            "name": "expires_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          }
+        },
+        "indexes": {
+          "ecms_sessions_created_at_idx": {
+            "name": "ecms_sessions_created_at_idx",
+            "columns": [
+              {
+                "expression": "created_at",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_sessions_token_hash_unique": {
+            "name": "ecms_sessions_token_hash_unique",
+            "columns": [
+              {
+                "expression": "token_hash",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": true,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_sessions_user_idx": {
+            "name": "ecms_sessions_user_idx",
+            "columns": [
+              {
+                "expression": "user",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_sessions_expires_at_idx": {
+            "name": "ecms_sessions_expires_at_idx",
+            "columns": [
+              {
+                "expression": "expires_at",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          }
+        },
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      },
+      "public.ecms_login_attempts": {
+        "name": "ecms_login_attempts",
+        "schema": "",
+        "columns": {
+          "id": {
+            "name": "id",
+            "type": "serial",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "created_at": {
+            "name": "created_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "updated_at": {
+            "name": "updated_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "key": {
+            "name": "key",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          }
+        },
+        "indexes": {
+          "ecms_login_attempts_created_at_idx": {
+            "name": "ecms_login_attempts_created_at_idx",
+            "columns": [
+              {
+                "expression": "created_at",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          },
+          "ecms_login_attempts_key_idx": {
+            "name": "ecms_login_attempts_key_idx",
+            "columns": [
+              {
+                "expression": "key",
+                "isExpression": false,
+                "asc": true,
+                "nulls": "last"
+              }
+            ],
+            "isUnique": false,
+            "concurrently": false,
+            "method": "btree",
+            "with": {}
+          }
+        },
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      },
+      "public.ecms_globals": {
+        "name": "ecms_globals",
+        "schema": "",
+        "columns": {
+          "slug": {
+            "name": "slug",
+            "type": "text",
+            "primaryKey": true,
+            "notNull": true
+          },
+          "data": {
+            "name": "data",
+            "type": "jsonb",
+            "primaryKey": false,
+            "notNull": true
+          },
+          "status": {
+            "name": "status",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": false
+          },
+          "updated_at": {
+            "name": "updated_at",
+            "type": "text",
+            "primaryKey": false,
+            "notNull": true
+          }
+        },
+        "indexes": {},
+        "foreignKeys": {},
+        "compositePrimaryKeys": {},
+        "uniqueConstraints": {},
+        "policies": {},
+        "checkConstraints": {},
+        "isRLSEnabled": false
+      }
+    },
+    "enums": {},
+    "schemas": {},
+    "sequences": {},
+    "roles": {},
+    "policies": {},
+    "views": {},
+    "_meta": {
+      "schemas": {},
+      "tables": {},
+      "columns": {}
+    },
+    "id": "db91f424-23fe-4ae8-80c9-6a2bdba731db",
+    "prevId": "00000000-0000-0000-0000-000000000000"
+  }
+}

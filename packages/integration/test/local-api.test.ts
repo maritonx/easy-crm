@@ -1,7 +1,7 @@
 import { NotFoundError, QueryError, ValidationError } from '@easy-cms/core'
 import { describe, expect, it } from 'vitest'
 import { blog } from './blog.js'
-import { open, rawClient } from './helpers.js'
+import { open, rawQuery, table } from './helpers.js'
 
 describe('create / findById', () => {
   it('round-trips every field type', async () => {
@@ -224,17 +224,15 @@ describe('delete', () => {
     expect(deleted.id).toBe(post.id)
     expect(await cms.findById('posts', post.id)).toBeNull()
 
-    const client = rawClient(cms.cwd)
-    for (const table of [
-      'ecms_posts__tags',
-      'ecms_posts__links',
-      'ecms_posts__links__tags',
-      'ecms_posts__links__notes',
+    for (const name of [
+      'posts__tags',
+      'posts__links',
+      'posts__links__tags',
+      'posts__links__notes',
     ]) {
-      const { rows } = await client.execute(`SELECT count(*) AS n FROM ${table}`)
-      expect(rows[0]?.n, table).toBe(0)
+      const rows = await rawQuery(cms.cwd, `SELECT count(*) AS n FROM ${table(cms.cwd, name)}`)
+      expect(Number(rows[0]?.n), name).toBe(0)
     }
-    client.close()
     await cms.destroy()
   })
 })
