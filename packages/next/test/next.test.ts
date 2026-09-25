@@ -7,8 +7,17 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { SERVER_EXTERNAL_PACKAGES, withEasyCMS } from '../src/config.js'
 import { createAdminRouteHandlers, createRouteHandlers, getEasyCMS } from '../src/index.js'
 
+/** Temp cleanup: Windows may still hold SQLite files for a moment after close; retry, then give up quietly. */
+function removeTemp(path: string) {
+  try {
+    rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  } catch {
+    // leave it to the OS temp cleaner
+  }
+}
+
 const dir = mkdtempSync(join(tmpdir(), 'easy-cms-next-'))
-afterAll(() => rmSync(dir, { recursive: true, force: true }))
+afterAll(() => removeTemp(dir))
 
 const config = defineConfig({
   secret: 's'.repeat(32),

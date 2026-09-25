@@ -6,9 +6,18 @@ import { createClient } from '@libsql/client'
 import { afterEach } from 'vitest'
 import { sqlite } from '../src/index.js'
 
+/** Temp cleanup: Windows may still hold SQLite files for a moment after close; retry, then give up quietly. */
+function removeTemp(path: string) {
+  try {
+    rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  } catch {
+    // leave it to the OS temp cleaner
+  }
+}
+
 const dirs: string[] = []
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
+  for (const dir of dirs.splice(0)) removeTemp(dir)
 })
 
 /** A fresh temporary project directory, removed after each test. */

@@ -9,7 +9,9 @@
       "!**/.nuxt",
       "!**/.output",
       "!**/.next",
-      "!**/.pglite*"
+      "!**/.pglite*",
+      "!**/next-env.d.ts",
+      "!**/.tmp"
     ]
   },
   "formatter": {

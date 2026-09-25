@@ -3,11 +3,20 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { type IO, run } from '../src/index.js'
 
+/** Temp cleanup: Windows may still hold SQLite files for a moment after close; retry, then give up quietly. */
+function removeTemp(path: string) {
+  try {
+    rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  } catch {
+    // leave it to the OS temp cleaner
+  }
+}
+
 // Projects live inside the package so the config can import workspace packages.
 const TMP = join(import.meta.dirname, '.tmp')
 const dirs: string[] = []
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
+  for (const dir of dirs.splice(0)) removeTemp(dir)
 })
 
 function project(fields = "[{ name: 'title', type: 'text' }]") {
@@ -23,6 +32,7 @@ function writeConfig(dir: string, fields: string) {
     join(dir, 'easy-cms.config.ts'),
     `import { defineConfig } from '@easy-cms/core'
 import { sqlite } from '@easy-cms/db-sqlite'
+
 export default defineConfig({
   secret: '${'s'.repeat(32)}',
   db: sqlite({ url: 'file:./cms.db' }),

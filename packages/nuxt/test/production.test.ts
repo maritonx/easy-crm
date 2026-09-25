@@ -5,10 +5,19 @@ import { $fetch, fetch, setup } from '@nuxt/test-utils/e2e'
 import { afterAll, describe, expect, it } from 'vitest'
 import { fixture, freshDatabase } from './helpers.js'
 
+/** Temp cleanup: Windows may still hold SQLite files for a moment after close; retry, then give up quietly. */
+function removeTemp(path: string) {
+  try {
+    rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+  } catch {
+    // leave it to the OS temp cleaner
+  }
+}
+
 // Like a deploy: create and apply a migration, then build and start the server from the project root.
 freshDatabase()
 const migrations = join(fixture, 'easy-cms')
-rmSync(migrations, { recursive: true, force: true })
+removeTemp(migrations)
 // Imported after the env var is set, since the config reads it.
 const { default: config } = await import('./fixtures/basic/easy-cms.config.js')
 const tool = await createEasyCMS(config, { cwd: fixture, schema: 'skip', logger: silentLogger })
@@ -24,7 +33,7 @@ await setup({ rootDir: fixture, env: { NODE_ENV: 'production' }, setupTimeout: 3
 
 afterAll(() => {
   process.chdir(previousCwd)
-  rmSync(migrations, { recursive: true, force: true })
+  removeTemp(migrations)
 })
 
 describe('@easy-cms/nuxt production build', () => {
