@@ -1,4 +1,7 @@
-import { isAbsolute, resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type {
   Database,
   DatabaseAdapter,
@@ -46,9 +49,44 @@ export const DEFAULT_MIGRATION_DIR = 'easy-cms/migrations'
 
 /** SQLite / libSQL database adapter. */
 export function sqlite(options: SQLiteAdapterOptions): DatabaseAdapter {
+  let traceInclude: string[] | undefined
   return {
     name: 'sqlite',
     init: (args) => SQLiteDatabase.connect(options, args),
+    bundle: {
+      get traceInclude() {
+        traceInclude ??= nativeBinaries()
+        return traceInclude
+      },
+    },
+  }
+}
+
+/**
+ * libsql loads its prebuilt binary with a computed `require()`, which output
+ * tracing cannot follow. Returns the binaries installed for this machine.
+ */
+export function nativeBinaries(): string[] {
+  try {
+    const client = fileURLToPath(import.meta.resolve('@libsql/client'))
+    const libsqlMain = createRequire(client).resolve('libsql')
+    const libsqlPkg = JSON.parse(
+      readFileSync(join(dirname(libsqlMain), 'package.json'), 'utf8'),
+    ) as {
+      optionalDependencies?: Record<string, string>
+    }
+    const requireFromLibsql = createRequire(libsqlMain)
+    const found: string[] = []
+    for (const name of Object.keys(libsqlPkg.optionalDependencies ?? {})) {
+      try {
+        found.push(requireFromLibsql.resolve(name))
+      } catch {
+        // not installed for this platform
+      }
+    }
+    return found
+  } catch {
+    return []
   }
 }
 

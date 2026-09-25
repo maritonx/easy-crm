@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { type IO, run } from '../src/index.js'
@@ -90,6 +90,22 @@ describe('easy-cms CLI (FR-INS-06..08)', () => {
     expect((await cli('migrate:status', '--cwd', dir)).out).toMatch(/✓ applied\s+\d+_init/)
     expect((await cli('migrate', '--cwd', dir)).out).toContain('No pending migrations.')
     expect(readdirSync(join(dir, 'easy-cms/migrations'))).toHaveLength(2)
+  })
+
+  it('loads .env from the project root', async () => {
+    const dir = project()
+    const config = join(dir, 'easy-cms.config.ts')
+    writeFileSync(
+      config,
+      readFileSync(config, 'utf8').replace(
+        /secret: '[^']+'/,
+        'secret: process.env.CLI_TEST_SECRET ?? ""',
+      ),
+    )
+    expect((await cli('migrate:status', '--cwd', dir)).code).toBe(1)
+    writeFileSync(join(dir, '.env'), `CLI_TEST_SECRET=${'e'.repeat(32)}\n`)
+    expect(await cli('migrate:status', '--cwd', dir)).toMatchObject({ code: 0 })
+    delete process.env.CLI_TEST_SECRET
   })
 
   it('reports config errors', async () => {

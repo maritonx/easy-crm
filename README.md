@@ -2,7 +2,7 @@
 
 Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
 
-> ⚠️ Early development (milestone M2). See [docs/DESIGN.md](docs/DESIGN.md) and [docs/SRS.md](docs/SRS.md).
+> ⚠️ Early development (milestone M3). See [docs/DESIGN.md](docs/DESIGN.md) and [docs/SRS.md](docs/SRS.md).
 
 ## Packages
 
@@ -10,7 +10,12 @@ Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
 |---|---|
 | [`@easy-cms/core`](packages/core) | config, validation, type inference, Local API, auth, access control, REST handler |
 | [`@easy-cms/db-sqlite`](packages/db-sqlite) | SQLite / libSQL adapter, migrations |
+| [`@easy-cms/nuxt`](packages/nuxt) | Nuxt 4 module: REST API + typed `useEasyCMS()` |
 | [`easy-cms`](packages/cli) | CLI: `migrate`, `migrate:create`, `migrate:status` |
+
+## Examples
+
+- [`examples/nuxt-blog`](examples/nuxt-blog) — Nuxt 4 blog using the Local API and REST API
 
 ## Development
 

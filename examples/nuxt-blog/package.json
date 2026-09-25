@@ -1,0 +1,24 @@
+{
+  "name": "example-nuxt-blog",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxi dev",
+    "build": "nuxi build",
+    "preview": "node .output/server/index.mjs",
+    "seed": "node --env-file-if-exists=.env scripts/seed.ts",
+    "typecheck": "nuxi prepare && tsc -p .nuxt/tsconfig.server.json --noEmit",
+    "migrate:create": "easy-cms migrate:create",
+    "migrate": "easy-cms migrate"
+  },
+  "dependencies": {
+    "@easy-cms/core": "workspace:^",
+    "@easy-cms/db-sqlite": "workspace:^",
+    "@easy-cms/nuxt": "workspace:^",
+    "nuxt": "^4.5.2",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "easy-cms": "workspace:^"
+  }
+}

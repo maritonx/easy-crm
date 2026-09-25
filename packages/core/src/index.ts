@@ -50,6 +50,7 @@ export type * from './infer.js'
 export {
   CONFIG_FILE_NAMES,
   findConfigFile,
+  importConfig,
   type LoadConfigOptions,
   loadConfig,
 } from './load-config.js'

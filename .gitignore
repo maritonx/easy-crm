@@ -9,3 +9,6 @@ coverage/
 *.db
 .DS_Store
 test/.tmp/
+.nuxt/
+.output/
+.data/

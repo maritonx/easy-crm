@@ -1,0 +1,56 @@
+{
+  "name": "@easy-cms/nuxt",
+  "version": "0.0.0",
+  "description": "Nuxt module for Easy CMS",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nuxt/kit": "^4.5.2",
+    "h3": "^1.15.11"
+  },
+  "peerDependencies": {
+    "@easy-cms/core": "workspace:^",
+    "nuxt": "^4.0.0"
+  },
+  "devDependencies": {
+    "@easy-cms/core": "workspace:^",
+    "@easy-cms/db-sqlite": "workspace:^",
+    "@nuxt/schema": "^4.5.2",
+    "@nuxt/test-utils": "^4.3.2",
+    "nuxt": "^4.5.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "directory": "packages/nuxt"
+  },
+  "keywords": [
+    "easy-cms",
+    "nuxt",
+    "nuxt-module",
+    "cms",
+    "headless-cms"
+  ]
+}

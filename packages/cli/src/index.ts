@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { ConfigError, createEasyCMS, EasyCMSError, type Logger, loadConfig } from '@easy-cms/core'
 
@@ -22,7 +24,7 @@ Commands:
 
 Options:
   --config <file>         Config file (default: easy-cms.config.ts)
-  --cwd <dir>             Project root (default: current directory)
+  --cwd <dir>             Project root (default: current directory); its .env is loaded
   -h, --help              Show help
 `
 
@@ -72,6 +74,7 @@ export async function run(argv: readonly string[], io: IO = defaultIO): Promise<
   }
 
   const cwd = values.cwd ?? process.cwd()
+  loadDotEnv(cwd)
   const logger: Logger = { info: io.out, warn: (m) => io.err(`warning: ${m}`), error: io.err }
 
   try {
@@ -143,4 +146,10 @@ function parse(argv: readonly string[]) {
       help: { type: 'boolean', short: 'h' },
     },
   })
+}
+
+/** Loads `<cwd>/.env` like Nuxt and Next do. Variables already set are kept. */
+function loadDotEnv(cwd: string) {
+  const file = join(cwd, '.env')
+  if (existsSync(file)) process.loadEnvFile(file)
 }

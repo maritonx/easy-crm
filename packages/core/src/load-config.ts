@@ -27,6 +27,16 @@ export function findConfigFile(cwd: string = process.cwd()): string | undefined 
   return undefined
 }
 
+/**
+ * Imports a config file without resolving or validating it.
+ * Build tools use this to read hints (e.g. `db.bundle`) when env vars may be missing.
+ */
+export async function importConfig(file: string): Promise<Config | undefined> {
+  const jiti = createJiti(import.meta.url, { moduleCache: false, interopDefault: false })
+  const mod = await jiti.import<{ default?: Config }>(file)
+  return mod.default
+}
+
 /** Loads `easy-cms.config.ts` (or `.mts`/`.js`/`.mjs`) and resolves it. */
 export async function loadConfig(options: LoadConfigOptions = {}): Promise<ResolvedConfig> {
   const cwd = options.cwd ?? process.cwd()

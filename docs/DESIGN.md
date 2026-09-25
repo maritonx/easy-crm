@@ -254,3 +254,4 @@ easy-cms serve               # standalone (v0.2)
 - [ADR-0003](adr/0003-drizzle-sqlite-postgres.md) — Drizzle + SQLite/Postgres
 - [ADR-0004](adr/0004-code-first-content-model.md) — Content model แบบ code-first
 - [ADR-0005](adr/0005-storage-layout.md) — รูปแบบการเก็บข้อมูลและ migration
+- [ADR-0006](adr/0006-nuxt-adapter.md) — โครงสร้างของ Nuxt adapter

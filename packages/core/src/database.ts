@@ -85,4 +85,11 @@ export interface Database {
 export interface DatabaseAdapter {
   readonly name: string
   init(args: DatabaseInitArgs): Promise<Database>
+  /** Hints for bundlers (Nitro, Next.js output tracing) about files static analysis cannot find. */
+  readonly bundle?: BundleHints
+}
+
+export interface BundleHints {
+  /** Absolute paths of files to ship with the server build, e.g. native binaries loaded dynamically. */
+  readonly traceInclude: readonly string[]
 }
