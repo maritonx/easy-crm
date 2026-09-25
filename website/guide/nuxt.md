@@ -51,4 +51,4 @@ export default defineEventHandler(async (event) => {
 - The production build ships the database driver's native files (libSQL). Build on the same OS
   and architecture you deploy to, and start the server from the project root.
 
-See the [Nuxt example](https://github.com/easy-cms/easy-cms/tree/main/examples/nuxt-blog).
+See the [Nuxt example](https://github.com/maritonx/easy-crm/tree/main/examples/nuxt-blog).

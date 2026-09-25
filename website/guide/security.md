@@ -21,4 +21,4 @@ What you should do:
 - Keep migrations reviewed and dependencies updated.
 
 Report vulnerabilities privately as described in
-[SECURITY.md](https://github.com/easy-cms/easy-cms/blob/main/SECURITY.md).
+[SECURITY.md](https://github.com/maritonx/easy-crm/blob/main/SECURITY.md).

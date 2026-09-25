@@ -1,6 +1,6 @@
 # @easy-cms/richtext
 
-Renders [Easy CMS](https://github.com/easy-cms/easy-cms) rich text (Tiptap JSON) to safe HTML.
+Renders [Easy CMS](https://github.com/maritonx/easy-crm) rich text (Tiptap JSON) to safe HTML.
 
 ```ts
 import { renderRichText, richTextToPlainText } from '@easy-cms/richtext'

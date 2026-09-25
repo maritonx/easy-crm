@@ -1,6 +1,6 @@
 # @easy-cms/core
 
-Core of [Easy CMS](https://github.com/easy-cms/easy-cms) — an embedded, code-first headless CMS for Nuxt and Next.js.
+Core of [Easy CMS](https://github.com/maritonx/easy-crm) — an embedded, code-first headless CMS for Nuxt and Next.js.
 
 > ⚠️ Pre-release. Not ready for production.
 

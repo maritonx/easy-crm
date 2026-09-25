@@ -1,6 +1,6 @@
 # @easy-cms/admin
 
-The prebuilt admin UI of [Easy CMS](https://github.com/easy-cms/easy-cms): a Vue 3 single-page app
+The prebuilt admin UI of [Easy CMS](https://github.com/maritonx/easy-crm): a Vue 3 single-page app
 that talks to the Easy CMS REST API. Framework adapters (`@easy-cms/nuxt`, `@easy-cms/next`) serve it
 for you; you normally don't install this package directly.
 

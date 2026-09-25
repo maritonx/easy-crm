@@ -1,6 +1,6 @@
 # @easy-cms/next
 
-Next.js (App Router, 15+) adapter for [Easy CMS](https://github.com/easy-cms/easy-cms).
+Next.js (App Router, 15+) adapter for [Easy CMS](https://github.com/maritonx/easy-crm).
 
 ```bash
 pnpm add @easy-cms/next @easy-cms/core @easy-cms/db-postgres

@@ -36,7 +36,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/easy-cms/easy-cms.git",
+    "url": "git+https://github.com/maritonx/easy-crm.git",
     "directory": "packages/cli"
   },
   "keywords": [

@@ -1,6 +1,6 @@
 # @easy-cms/nuxt
 
-Nuxt 4 module for [Easy CMS](https://github.com/easy-cms/easy-cms).
+Nuxt 4 module for [Easy CMS](https://github.com/maritonx/easy-crm).
 
 ```bash
 pnpm add @easy-cms/nuxt @easy-cms/core @easy-cms/db-sqlite

@@ -67,4 +67,4 @@ in Server Components, Route Handlers and Server Actions.
   limiting; enable it behind a proxy you trust, such as Vercel.
 - Next.js removes trailing slashes, so the admin lives at `/admin` (not `/admin/`).
 
-See the [Next.js example](https://github.com/easy-cms/easy-cms/tree/main/examples/next-blog).
+See the [Next.js example](https://github.com/maritonx/easy-crm/tree/main/examples/next-blog).

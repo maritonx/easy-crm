@@ -1,6 +1,6 @@
 # @easy-cms/db-postgres
 
-PostgreSQL adapter for [Easy CMS](https://github.com/easy-cms/easy-cms).
+PostgreSQL adapter for [Easy CMS](https://github.com/maritonx/easy-crm).
 
 ```ts
 import { postgres } from '@easy-cms/db-postgres'

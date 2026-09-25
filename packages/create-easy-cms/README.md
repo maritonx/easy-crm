@@ -1,6 +1,6 @@
 # create-easy-cms
 
-Adds [Easy CMS](https://github.com/easy-cms/easy-cms) to a Nuxt or Next.js project.
+Adds [Easy CMS](https://github.com/maritonx/easy-crm) to a Nuxt or Next.js project.
 
 ```bash
 npx create-easy-cms [dir] [--db sqlite|postgres] [--yes] [--skip-install]

@@ -54,9 +54,9 @@ export default defineConfig({
         ],
       },
     ],
-    socialLinks: [{ icon: 'github', link: 'https://github.com/easy-cms/easy-cms' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/maritonx/easy-crm' }],
     search: { provider: 'local' },
-    editLink: { pattern: 'https://github.com/easy-cms/easy-cms/edit/main/website/:path' },
+    editLink: { pattern: 'https://github.com/maritonx/easy-crm/edit/main/website/:path' },
     footer: { message: 'Released under the MIT License.' },
   },
 })

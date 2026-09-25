@@ -1,6 +1,6 @@
 # easy-cms
 
-Command line tool for [Easy CMS](https://github.com/easy-cms/easy-cms). Install it as a dev
+Command line tool for [Easy CMS](https://github.com/maritonx/easy-crm). Install it as a dev
 dependency; every command loads `.env` from the project root.
 
 ```bash
