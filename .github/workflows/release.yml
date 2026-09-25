@@ -6,6 +6,8 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+# Publishing uses npm trusted publishing (OIDC): each package on npmjs.com trusts
+# maritonx/easy-crm + release.yml, so no npm token is stored in the repository.
 permissions:
   contents: write
   pull-requests: write
@@ -22,6 +24,8 @@ jobs:
           node-version: 24
           cache: pnpm
           registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or newer.
+      - run: npm install -g npm@11
       - run: pnpm install --frozen-lockfile
       # Opens a "Version Packages" PR; merging it publishes to npm.
       - uses: changesets/action@v1
@@ -30,5 +34,4 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
