@@ -1,6 +1,6 @@
 {
   "name": "@easy-cms/richtext",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Render Easy CMS rich text (Tiptap JSON) to safe HTML",
   "license": "MIT",
   "type": "module",
