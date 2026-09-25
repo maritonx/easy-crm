@@ -1,20 +1,68 @@
 # Easy CMS
 
-Embedded, code-first headless CMS for **Nuxt** and **Next.js**. MIT licensed.
+[![npm](https://img.shields.io/npm/v/@easy-cms/core?label=npm)](https://www.npmjs.com/package/@easy-cms/core)
+[![CI](https://github.com/maritonx/easy-crm/actions/workflows/ci.yml/badge.svg)](https://github.com/maritonx/easy-crm/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-> v0.1 — first release candidate. Design: [docs/DESIGN.md](docs/DESIGN.md) · Requirements: [docs/SRS.md](docs/SRS.md) · Docs: [`website/`](website)
+Embedded, code-first headless CMS for **Nuxt** and **Next.js**: your content model lives in
+TypeScript next to your app, and the CMS (admin UI, REST API, typed Local API) runs inside it.
+No separate server to host.
+
+**[Documentation](https://maritonx.github.io/easy-crm/)** ·
+[Getting started](https://maritonx.github.io/easy-crm/guide/getting-started) ·
+[Examples](#examples)
+
+> Pre-1.0: the API may still change between minor versions.
 
 ## Quick start
 
 In a Nuxt 4 or Next.js 15+ project:
 
 ```bash
-npx create-easy-cms
+npm create easy-cms@latest
 npm run dev          # then open http://localhost:3000/admin
 ```
 
-Define content in `easy-cms.config.ts`; read it with `useEasyCMS()` (Nuxt) or
-`getEasyCMS(config)` (Next.js), or over REST at `/api/cms`.
+`create-easy-cms` adds the packages, an `easy-cms.config.ts` with a sample collection, a
+secret in `.env`, and the framework wiring. Define content in the config:
+
+```ts
+// easy-cms.config.ts
+import { defineConfig } from '@easy-cms/core'
+import { sqlite } from '@easy-cms/db-sqlite'
+
+export default defineConfig({
+  secret: process.env.EASY_CMS_SECRET!,
+  db: sqlite({ url: 'file:./cms.db' }),
+  collections: [
+    {
+      slug: 'posts',
+      drafts: true,
+      fields: [
+        { name: 'title', type: 'text', required: true },
+        { name: 'body', type: 'richText' },
+      ],
+    },
+  ],
+})
+```
+
+Then read it with `useEasyCMS()` (Nuxt) or `getEasyCMS(config)` (Next.js), fully typed, or over
+REST at `/api/cms`.
+
+## Features
+
+- **Admin UI** at `/admin`: lists, forms, rich text (Tiptap), media library, drafts, TH/EN
+- **Typed Local API** inferred from your config, plus a **REST API** and `generate:types` for
+  frontends in other repositories
+- **Auth and access control**: built-in users and roles, function-based access rules per
+  collection and document
+- **Uploads** with image sizes (optional `sharp`), **drafts**, **globals** and **hooks**
+- **SQLite** (libSQL) or **Postgres** (postgres.js or PGlite) through Drizzle, sharing your app's
+  database with `ecms_`-prefixed tables
+- **Migrations**: automatic schema push in development, reviewed migration files in production
+
+Design notes: [docs/DESIGN.md](docs/DESIGN.md) · Requirements: [docs/SRS.md](docs/SRS.md)
 
 ## Packages
 
@@ -55,6 +103,6 @@ End-to-end tests run the admin suite against both examples (Playwright, uses you
 pnpm test:e2e
 ```
 
-Docs: `pnpm --dir website dev`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Docs site: `pnpm --dir website dev`, deployed to GitHub Pages on push to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 Add a changeset for user-facing changes with `pnpm changeset`.

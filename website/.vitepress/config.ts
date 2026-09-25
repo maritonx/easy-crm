@@ -1,12 +1,16 @@
 import { defineConfig } from 'vitepress'
 
+// GitHub Pages serves the site under /<repo>/; the deploy workflow sets DOCS_BASE.
+const base = process.env.DOCS_BASE ?? '/'
+
 export default defineConfig({
+  base,
   title: 'Easy CMS',
   description: 'Embedded, code-first headless CMS for Nuxt and Next.js',
   lang: 'en',
   cleanUrls: true,
   lastUpdated: true,
-  head: [['link', { rel: 'icon', href: '/logo.svg' }]],
+  head: [['link', { rel: 'icon', href: `${base}logo.svg` }]],
   themeConfig: {
     logo: '/logo.svg',
     nav: [
