@@ -84,7 +84,12 @@ type Add = (path: string, message: string, hint?: string) => void
 function validateSecret(secret: unknown, add: Add) {
   const hint = `set EASY_CMS_SECRET to a random string of at least ${MIN_SECRET_LENGTH} characters, e.g. \`openssl rand -hex 32\``
   if (typeof secret !== 'string' || secret.length === 0) {
-    add('secret', 'is required', hint)
+    // Usually the variable is in .env but the production server does not read that file.
+    add(
+      'secret',
+      'is required',
+      `${hint}. In production, set it in the server's environment: not every server reads .env (Nuxt's does not)`,
+    )
   } else if (secret.length < MIN_SECRET_LENGTH) {
     add('secret', `must be at least ${MIN_SECRET_LENGTH} characters (got ${secret.length})`, hint)
   }

@@ -28,9 +28,10 @@ export interface LocalStorageOptions {
 
 /** Stores files on the local disk. Suitable for servers with a persistent filesystem. */
 export function localStorage(options: LocalStorageOptions = {}): StorageAdapter {
-  let root = resolve(options.dir ?? 'uploads')
+  // turbopackIgnore: paths are only known at runtime; without it Next traces the whole project.
+  let root = resolve(/* turbopackIgnore: true */ options.dir ?? 'uploads')
   const pathOf = (key: string) => {
-    const path = normalize(join(root, key))
+    const path = normalize(join(/* turbopackIgnore: true */ root, key))
     if (!path.startsWith(root + sep)) throw new Error(`Invalid storage key "${key}"`)
     return path
   }
@@ -38,7 +39,7 @@ export function localStorage(options: LocalStorageOptions = {}): StorageAdapter 
     name: 'local',
     init({ cwd }) {
       const dir = options.dir ?? 'uploads'
-      root = isAbsolute(dir) ? dir : resolve(cwd, dir)
+      root = isAbsolute(dir) ? dir : resolve(/* turbopackIgnore: true */ cwd, dir)
     },
     async put(key, data) {
       const path = pathOf(key)

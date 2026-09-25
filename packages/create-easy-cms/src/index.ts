@@ -230,7 +230,12 @@ Done. Next:
   1. ${devCommand}
   2. Open /admin and create the first admin (or run: npx easy-cms create-admin)
   3. Before deploying: npx easy-cms migrate:create init, commit easy-cms/migrations,
-     and run npx easy-cms migrate where you deploy.`)
+     and run npx easy-cms migrate where you deploy.
+  4. Set EASY_CMS_SECRET in the production environment.${
+    framework === 'nuxt'
+      ? `\n     Nuxt's production server does not read .env: set it on the host, or start with\n     node --env-file=.env .output/server/index.mjs`
+      : ''
+  }`)
   return 0
 }
 

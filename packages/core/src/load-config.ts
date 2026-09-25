@@ -21,8 +21,9 @@ export interface LoadConfigOptions {
 /** Finds the config file in `cwd`, returning its absolute path or `undefined`. */
 export function findConfigFile(cwd: string = process.cwd()): string | undefined {
   for (const name of CONFIG_FILE_NAMES) {
-    const path = resolve(cwd, name)
-    if (existsSync(path)) return path
+    // turbopackIgnore: a runtime lookup; without it Next traces the whole project into the build.
+    const path = resolve(/* turbopackIgnore: true */ cwd, name)
+    if (existsSync(/* turbopackIgnore: true */ path)) return path
   }
   return undefined
 }

@@ -11,7 +11,8 @@
       "!**/.next",
       "!**/.pglite*",
       "!**/next-env.d.ts",
-      "!**/.tmp"
+      "!**/.tmp",
+      "!**/test-results"
     ]
   },
   "formatter": {

@@ -48,6 +48,9 @@ export default defineEventHandler(async (event) => {
   immediately.
 - The admin's static files are Nitro public assets, so on platforms with a CDN they are served
   from it.
+- **Nuxt's production server does not read `.env`.** Set `EASY_CMS_SECRET` on the host, or start
+  with `node --env-file=.env .output/server/index.mjs`. See
+  [Environment variables](./deployment#environment-variables).
 - The production build ships the database driver's native files (libSQL). Build on the same OS
   and architecture you deploy to, and start the server from the project root.
 
