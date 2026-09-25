@@ -8,7 +8,7 @@ export default defineConfig({
     server: { deps: { inline: [/@nuxt\/test-utils/] } },
     // Each file builds a Nuxt app; run them one at a time.
     fileParallelism: false,
-    testTimeout: 60_000,
+    testTimeout: 90_000,
     hookTimeout: 300_000,
   },
 })

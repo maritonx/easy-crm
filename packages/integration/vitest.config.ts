@@ -7,8 +7,8 @@ const dialects = ['sqlite', 'pglite', ...(process.env.POSTGRES_URL ? ['postgres'
 export default defineConfig({
   test: {
     // The first test of a file starts PGlite and loads drizzle-kit.
-    testTimeout: 30_000,
-    hookTimeout: 30_000,
+    testTimeout: 90_000,
+    hookTimeout: 90_000,
     projects: dialects.map((dialect) => ({
       extends: true,
       test: { name: dialect, env: { EASY_CMS_TEST_DIALECT: dialect } },
