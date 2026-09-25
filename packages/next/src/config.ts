@@ -7,15 +7,16 @@ import { CONFIG_FILE_NAMES, importConfig } from '@easy-cms/core'
 interface NextConfigLike {
   serverExternalPackages?: string[]
   outputFileTracingIncludes?: Record<string, string[]>
-  [key: string]: unknown
 }
 
-type NextConfigInput =
-  | NextConfigLike
-  | ((
-      phase: string,
-      ctx: { defaultConfig: NextConfigLike },
-    ) => NextConfigLike | Promise<NextConfigLike>)
+/**
+ * A Next config object, or the function form Next also accepts. Generic rather than an index
+ * signature, so Next's own `NextConfig` interface is accepted as is.
+ */
+export type NextConfigInput<T extends object = NextConfigLike> =
+  | T
+  // biome-ignore lint/suspicious/noExplicitAny: Next passes its full default config here
+  | ((phase: string, ctx: { defaultConfig: any }) => T | Promise<T>)
 
 export interface WithEasyCMSOptions {
   /** Path to the Easy CMS config, relative to the project root. Default: `easy-cms.config.ts` (or .mts/.js/.mjs). */
@@ -50,9 +51,17 @@ export const SERVER_EXTERNAL_PACKAGES = [
  * export default withEasyCMS({ ... })
  * ```
  */
-export function withEasyCMS(nextConfig: NextConfigInput = {}, options: WithEasyCMSOptions = {}) {
-  return async (phase: string, ctx: { defaultConfig: NextConfigLike }): Promise<NextConfigLike> => {
-    const base = typeof nextConfig === 'function' ? await nextConfig(phase, ctx) : nextConfig
+export function withEasyCMS<T extends object = NextConfigLike>(
+  nextConfig: NextConfigInput<T> = {} as T,
+  options: WithEasyCMSOptions = {},
+) {
+  return async (
+    phase: string,
+    // biome-ignore lint/suspicious/noExplicitAny: see NextConfigInput
+    ctx: { defaultConfig: any },
+  ): Promise<T & Required<NextConfigLike>> => {
+    const config = typeof nextConfig === 'function' ? await nextConfig(phase, ctx) : nextConfig
+    const base = config as T & NextConfigLike
     const root = process.cwd()
     const include = [...(await tracedFiles(root, options.configPath))]
     return {

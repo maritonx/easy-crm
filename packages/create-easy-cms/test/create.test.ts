@@ -2,7 +2,11 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import pkg from '../package.json' with { type: 'json' }
 import { detectPackageManager, type IO, packagesFor, run } from '../src/index.js'
+
+/** The version range the CLI installs: its own version once released. */
+const V = pkg.version === '0.0.0' ? 'latest' : `^${pkg.version}`
 
 /** Temp cleanup: Windows may still hold SQLite files for a moment after close; retry, then give up quietly. */
 function removeTemp(path: string) {
@@ -88,8 +92,8 @@ describe('create-easy-cms (FR-INS-01..03)', () => {
     expect(read(dir, '.env')).toMatch(/^EASY_CMS_SECRET=[0-9a-f]{64}\n$/)
     expect(read(dir, '.gitignore')).toContain('cms.db*\nuploads/')
     expect(result.commands).toEqual([
-      'pnpm add @easy-cms/core@latest @easy-cms/nuxt@latest @easy-cms/db-sqlite@latest',
-      'pnpm add -D easy-cms@latest',
+      `pnpm add @easy-cms/core@${V} @easy-cms/nuxt@${V} @easy-cms/db-sqlite@${V}`,
+      `pnpm add -D easy-cms@${V}`,
     ])
   })
 
@@ -123,9 +127,9 @@ describe('create-easy-cms (FR-INS-01..03)', () => {
     expect(read(dir, 'next.config.ts')).toContain('export default withEasyCMS(nextConfig)')
     expect(read(dir, 'easy-cms.config.ts')).toContain("postgres({ pglite: '.pglite' })")
     expect(result.commands[0]).toBe(
-      'npm install @easy-cms/core@latest @easy-cms/next@latest @easy-cms/db-postgres@latest @electric-sql/pglite',
+      `npm install @easy-cms/core@${V} @easy-cms/next@${V} @easy-cms/db-postgres@${V} @electric-sql/pglite`,
     )
-    expect(result.commands[1]).toBe('npm install --save-dev easy-cms@latest')
+    expect(result.commands[1]).toBe(`npm install --save-dev easy-cms@${V}`)
   })
 
   it('creates next.config.ts when there is none, and leaves unusual configs to the user', async () => {
@@ -188,9 +192,9 @@ describe('helpers', () => {
 
   it('lists packages per framework and database', () => {
     expect(packagesFor('next', 'sqlite').deps).toEqual([
-      '@easy-cms/core@latest',
-      '@easy-cms/next@latest',
-      '@easy-cms/db-sqlite@latest',
+      `@easy-cms/core@${V}`,
+      `@easy-cms/next@${V}`,
+      `@easy-cms/db-sqlite@${V}`,
     ])
   })
 })

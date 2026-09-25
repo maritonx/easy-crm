@@ -43,8 +43,7 @@
     "@electric-sql/pglite": "^0.5.8"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "repository": {
     "type": "git",

@@ -31,8 +31,7 @@
     "@easy-cms/db-sqlite": "workspace:^"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "repository": {
     "type": "git",

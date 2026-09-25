@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { defineConfig } from '@easy-cms/core'
 import { sqlite } from '@easy-cms/db-sqlite'
+import type { NextConfig } from 'next'
 import { afterAll, describe, expect, it } from 'vitest'
 import { SERVER_EXTERNAL_PACKAGES, withEasyCMS } from '../src/config.js'
 import { createAdminRouteHandlers, createRouteHandlers, getEasyCMS } from '../src/index.js'
@@ -65,6 +66,16 @@ describe('createAdminRouteHandlers', () => {
 })
 
 describe('withEasyCMS', () => {
+  it('accepts a config typed as NextConfig', async () => {
+    // create-next-app writes `const nextConfig: NextConfig = {}`; this must type-check.
+    const nextConfig: NextConfig = { reactStrictMode: true }
+    const config: NextConfig = await withEasyCMS(nextConfig)('phase-production-build', {
+      defaultConfig: {},
+    })
+    expect(config.reactStrictMode).toBe(true)
+    expect(config.serverExternalPackages).toContain('@easy-cms/core')
+  })
+
   it('adds server externals and tracing includes, keeping the user config', async () => {
     const make = withEasyCMS({ reactStrictMode: true, serverExternalPackages: ['mine'] })
     const result = await make('phase-production-build', { defaultConfig: {} })

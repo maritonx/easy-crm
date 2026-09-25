@@ -39,8 +39,7 @@
     "next": "^16.3.6"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "repository": {
     "type": "git",

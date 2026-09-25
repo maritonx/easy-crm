@@ -1,3 +1,7 @@
 import { withEasyCMS } from '@easy-cms/next/config'
+import type { NextConfig } from 'next'
 
-export default withEasyCMS({})
+// Typed like create-next-app's template, so the example also checks that withEasyCMS accepts it.
+const nextConfig: NextConfig = {}
+
+export default withEasyCMS(nextConfig)

@@ -37,8 +37,7 @@
     "sharp": "^0.35.4"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "repository": {
     "type": "git",
